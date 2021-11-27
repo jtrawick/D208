@@ -1,0 +1,177 @@
+---
+title: "D208 - Predictive Modeling"
+output: html_notebook
+---
+___
+
+#### **Performance Assessment - Task 1: Multiple Regression for Predictive Modeling**
+*Medical Readmission Data Set (Clean)*
+
+___ 
+
+
+</br>
+
+
+## Part I
+
+### A1: Research Question
+
+### A2: Objectives and Goals
+
+
+</br>
+
+
+## Part II
+
+### B1: Summary of Assumptions
+
+### B2: Tool Benefits
+
+### B3: Appropriate Technique
+
+
+</br>
+
+
+## Part III
+
+### C1: Data Goals
+
+### C2: Summary Statistics
+
+### C3: Steps to Prepare the Data
+
+### C4: Visualizations
+
+### C5: Prepared Data Set
+
+
+</br>
+
+
+## Part IV
+
+### D1: Initial Model
+
+### D2: Justification of Model Reduction
+
+### D3: Reduced Multiple Regression Model
+
+
+</br>
+
+
+## Part V
+
+### E1: Model Comparison
+
+### E2: Output and Calculations
+
+### E3: Code
+```{r}
+# Load in the tidyverse
+# Suppress the overwritten functions messages
+# suppressPackageStartupMessages(library(tidyverse))
+# Because the above caused an error with the lsp, use for final draft
+library(tidyverse)
+```
+
+```{r}
+# Read dataset in
+df <- read.csv("./data/medical_clean.csv",
+               header = TRUE)
+```
+
+```{r}
+# Start with a quick glimpse of the data for orientation and future reference
+glimpse(df)
+```
+
+```{r}
+# Partition dataset to include only features to be initially included in model
+df_mdl <- df %>%
+  select(Initial_days,
+         Age,
+         Gender:Services)
+```
+
+```{r}
+df_mdl %>%
+  glimpse()
+```
+
+```{r}
+# Partition continuous vars from df_mdl
+df_mdl_doubles <- df_mdl %>%
+  select_if(is.double)
+```
+
+```{r}
+# use Hmisc package to view hist matrix of dbl vars
+library(Hmisc)
+df_mdl_doubles %>%
+  hist.data.frame()
+```
+
+```{r}
+init_mdl <- lm(Initial_days ~
+               Age +
+               Gender +
+               ReAdmis +
+               VitD_levels +
+               Doc_visits +
+               Full_meals_eaten +
+               vitD_supp +
+               Soft_drink +
+               Initial_admin +
+               HighBlood +
+               Stroke +
+               Complication_risk +
+               Overweight +
+               Arthritis +
+               Diabetes +
+               Hyperlipidemia +
+               BackPain +
+               Anxiety +
+               Allergic_rhinitis +
+               Reflux_esophagitis +
+               Asthma +
+               Services,
+               data = df_mdl)
+
+summary(init_mdl)
+```
+
+```{r}
+df_mdl_emergadmin <- df_mdl %>%
+    filter(Initial_admin == "Emergency Admission")
+```
+
+```{r}
+reduced_mdl <- lm(Initial_days ~
+                  VitD_levels +
+                  0 +
+                  ReAdmis,
+                  data = df_mdl_emergadmin)
+
+summary(reduced_mdl)
+```
+
+
+</br>
+
+
+## Part VI
+
+### F1: Results
+
+### F2: Recommendations
+
+
+</br>
+
+
+### I: Sources
+
