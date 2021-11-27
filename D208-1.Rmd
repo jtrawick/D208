@@ -81,15 +81,12 @@ Multiple regression is an appropriate technique to use to accomplish our goal of
 ```{r}
 # Load in the tidyverse
 # Suppress the overwritten functions messages
-# suppressPackageStartupMessages(library(tidyverse))
-# Because the above caused an error with the lsp, use for final draft
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 ```
 
 ```{r}
 # Read dataset in
-df <- read.csv("./data/medical_clean.csv",
-               header = TRUE)
+df <- read.csv("./data/medical_clean.csv")
 ```
 
 ```{r}
@@ -97,23 +94,43 @@ df <- read.csv("./data/medical_clean.csv",
 glimpse(df)
 ```
 
+Immediately we will drop variables that, at this time, are unnecessary for our objective and keep the rest.
+
 ```{r}
 # Partition dataset to include only features to be initially included in model
-df_mdl <- df %>%
+# Initial_days is reordered to first position for ease of reference
+init_mdl <- df %>%
   select(Initial_days,
-         Age,
-         Gender:Services)
+         Area,
+         Children:Services,
+         TotalCharge,
+         Additional_charges)
 ```
 
 ```{r}
-df_mdl %>%
+# View new dataframe and assess dtypes
+init_mdl %>%
   glimpse()
 ```
+We will next need to convert the dtypes of many our variables. Most of the variables which are currently of the type Character, and some that are of type Integer will need to be converted to Factors. This will ensure that the model handles the variables as intended.
 
 ```{r}
-# Partition continuous vars from df_mdl
-df_mdl_doubles <- df_mdl %>%
-  select_if(is.double)
+# Test list as_factor
+
+# fctvars <- colnames(init_mdl[sapply(init_mdl, class) == "character"])
+
+# init_mdl$Gender <- as_factor(init_mdl$Gender)
+
+# init_mdl[fctvars] <- lapply(init_mdl[fctvars], factor)
+```
+
+```{r}
+# Reformat all chr variables as factors
+init_mdl[sapply(init_mdl, is.character)] <- lapply(init_mdl[sapply(init_mdl, is.character)], as.factor)
+```
+
+```{r}
+glimpse(init_mdl)
 ```
 
 ```{r}
