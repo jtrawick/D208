@@ -1,47 +1,55 @@
 ---
 title: "D208 - Predictive Modeling"
-output: html_notebook
+output: 
+  html_notebook: 
+    toc: yes
+    theme: lumen
 ---
-___
-
-#### **Performance Assessment - Task 1: Multiple Regression for Predictive Modeling**
-*Medical Readmission Data Set (Clean)*
-
-___ 
-
 
 </br>
 
+------------------------------------------------------------------------
+
+#### **Performance Assessment - Task 1: Multiple Regression for Predictive Modeling**
+
+*Medical Readmission Data Set (Clean)*
+
+------------------------------------------------------------------------
+
+</br>
 
 ## Part I
 
 ### A1: Research Question
-What variables from the medical dataset are related to and influence a patient's initial number of days spent after hospitalization? In terms of hypothesis testing, our null hypothesis (H0) is, "No combination of variables included in the medical dataset are related to initial length of stay in any statistically significant way. Additionally, our alternate hypothesis (H1) is, "Some combination of variables included in the medical dataset are related to initial length of stay in a statistically significant way". 
+
+What variables from the medical dataset are related to and influence a patient's initial number of days spent after hospitalization? In terms of hypothesis testing, our null hypothesis (H0) is, "No combination of variables included in the medical dataset are related to initial length of stay in any statistically significant way. Additionally, our alternate hypothesis (H1) is, "Some combination of variables included in the medical dataset are related to initial length of stay in a statistically significant way".
 
 ### A2: Objectives and Goals
+
 The main goal of the following analysis is to determine what variables, if any, contribute positively to a patient's initial number of days hospitalized. This will be assessed using the R programming language and the technique of multiple regression to identify a meaningful model.
 
 </br>
 
-
 ## Part II
 
 ### B1: Summary of Assumptions
+
 The following are basic assumptions of multiple linear regression:
 
-- The assumption of a linear relationship between the explanatory variables and the target variable
-- The assumption that residual values are normally distributed
-- The assumption of non-multicollinearity of explanatory variables
-- The assumption that residual values are homoscedastic
+-   The assumption of a linear relationship between the explanatory variables and the target variable
+-   The assumption that residual values are normally distributed
+-   The assumption of non-multicollinearity of explanatory variables
+-   The assumption that residual values are homoscedastic
 
 ### B2: Tool Benefits
+
 The programming language of choice for this analysis will be the R programming language. Previously, Python has been the language most utilized, however R happens to handle the tasks of regression exceptionally well and thus became the self-evident choice for multiple regression analysis. In particular, the built-in functions of the base R language used to fit models are incredibly simple to navigate as well as demonstrate. Additionally, the reduction process using the `ols_step_backward_p()` function in particular made the process even easier. It is for good reason that R has a reputation for handling regression models.
 
 ### B3: Appropriate Technique
+
 Multiple regression is an appropriate technique to use to accomplish our goal of finding which variable contribute to a longer initial length of stay for several reasons. Firstly, the dataset contains 50 total variables of varying significance and utility. While some variable do not require much thought prior to elimination, some are not quite as straightforward. Therefore, running them through a multiple regression model prior to discarding them is a worthwhile venture. Additionally, multiple regression will allow us to see the significance of each variable's discrete contribution to the target variable as well as the interaction between explanatory variables themselves. Overall, regarding our objective, multiple regression is more than up to the task.
 
 </br>
-
 
 ## Part III
 
@@ -51,37 +59,11 @@ Multiple regression is an appropriate technique to use to accomplish our goal of
 
 ### C3: Steps to Prepare the Data
 
-### C4: Visualizations
-
-### C5: Prepared Data Set
-
-
-</br>
-
-
-## Part IV
-
-### D1: Initial Model
-
-### D2: Justification of Model Reduction
-
-### D3: Reduced Multiple Regression Model
-
-
-</br>
-
-
-## Part V
-
-### E1: Model Comparison
-
-### E2: Output and Calculations
-
-### E3: Code
 ```{r}
 # Load in the tidyverse
 # Suppress the overwritten functions messages
 suppressPackageStartupMessages(library(tidyverse))
+library(skimr)
 ```
 
 ```{r}
@@ -112,33 +94,52 @@ init_mdl <- df %>%
 init_mdl %>%
   glimpse()
 ```
-We will next need to convert the dtypes of many our variables. Most of the variables which are currently of the type Character, and some that are of type Integer will need to be converted to Factors. This will ensure that the model handles the variables as intended.
+
+We will next need to convert the dtypes of many our variables. Since there are not any variables needing type class conversion other than those which are currently of the type Character, we will simply select all of those variables at once and convert them to factor variables. This will ensure that the model handles the variables as intended.
 
 ```{r}
-# Test list as_factor
-
-# fctvars <- colnames(init_mdl[sapply(init_mdl, class) == "character"])
-
-# init_mdl$Gender <- as_factor(init_mdl$Gender)
-
-# init_mdl[fctvars] <- lapply(init_mdl[fctvars], factor)
-```
-
-```{r}
-# Reformat all chr variables as factors
+# Start with reformatting all chr variables as fct
 init_mdl[sapply(init_mdl, is.character)] <- lapply(init_mdl[sapply(init_mdl, is.character)], as.factor)
+
+# Next, list cols that need conversion to factor type
+fctvars <- colnames(init_mdl[sapply(init_mdl, class) == "character"])
+init_mdl[fctvars] <- lapply(init_mdl[fctvars], factor)
+
+summary(init_mdl)
 ```
 
 ```{r}
-glimpse(init_mdl)
+head(init_mdl["Gender"], 20)
 ```
 
 ```{r}
-# use Hmisc package to view hist matrix of dbl vars
-library(Hmisc)
-df_mdl_doubles %>%
-  hist.data.frame()
+# Check to see if any conversions introduced null values silently 
+anyNA.data.frame(init_mdl)
 ```
+
+### C4: Visualizations
+
+### C5: Prepared Data Set
+
+</br>
+
+## Part IV
+
+### D1: Initial Model
+
+### D2: Justification of Model Reduction
+
+### D3: Reduced Multiple Regression Model
+
+</br>
+
+## Part V
+
+### E1: Model Comparison
+
+### E2: Output and Calculations
+
+### E3: Code
 
 ```{r}
 init_mdl <- lm(Initial_days ~
@@ -184,9 +185,7 @@ reduced_mdl <- lm(Initial_days ~
 summary(reduced_mdl)
 ```
 
-
 </br>
-
 
 ## Part VI
 
@@ -194,9 +193,6 @@ summary(reduced_mdl)
 
 ### F2: Recommendations
 
-
 </br>
 
-
 ### I: Sources
-
