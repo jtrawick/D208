@@ -101,21 +101,52 @@ We will next need to convert the dtypes of many our variables. Since there are n
 # Start with reformatting all chr variables as fct
 init_mdl[sapply(init_mdl, is.character)] <- lapply(init_mdl[sapply(init_mdl, is.character)], as.factor)
 
-# Next, list cols that need conversion to factor type
-fctvars <- colnames(init_mdl[sapply(init_mdl, class) == "character"])
-init_mdl[fctvars] <- lapply(init_mdl[fctvars], factor)
-
-summary(init_mdl)
+# Reassess dataframe structure using skim()
+skim_without_charts(init_mdl)
 ```
 
-```{r}
-head(init_mdl["Gender"], 20)
-```
+This `skim()` view of the dataframe is quite useful. It shows the dataframes is comprised of two data types: factor and numeric. Thus, it appears we were successful in converting our columns to factors. The majority of the variables included are either dichotomous or otherwise nominal categorical variables. We do, however, have a couple of variables that likely would benefit from ordinal encoding. The previous code was convenient for converting a relatively large group of variables to factors all at once, but does not consider levels. Thus, we will take to re-leveling our ordinal variables (Initial_admin and Complication_risk) below. First, let's just verify our assumptions by accessing these variables' levels and asking whether or not the variable is indeed ordered.
 
 ```{r}
-# Check to see if any conversions introduced null values silently 
-anyNA.data.frame(init_mdl)
+# Access levels() for each variable
+levels(init_mdl$Initial_admin)
+levels(init_mdl$Complication_risk)
+
+# Check if the factor is ordered
+is.ordered(init_mdl$Initial_admin)
+is.ordered(init_mdl$Complication_risk)
 ```
+
+OK, our assumptions were valid. Now, let's fix them.
+
+```{r}
+init_mdl$Initial_admin <- factor(init_mdl$Initial_admin,
+                                 levels = c("Elective Admission",
+                                            "Observation Admission",
+                                            "Emergency Admission"),
+                                 ordered = TRUE)
+
+init_mdl$Complication_risk <- factor(init_mdl$Complication_risk,
+                                 levels = c("Low",
+                                            "Medium",
+                                            "High"),
+                                 ordered = TRUE)
+```
+
+Finally, we will check again to make sure the above worked as intended.
+
+```{r}
+# Access levels() for each variable
+levels(init_mdl$Initial_admin)
+levels(init_mdl$Complication_risk)
+
+# Check if the factor is ordered
+is.ordered(init_mdl$Initial_admin)
+is.ordered(init_mdl$Complication_risk)
+```
+
+Now that we have validated our conversion process and the composition of our data, we can now proceed with the model selection process. 
+
 
 ### C4: Visualizations
 
