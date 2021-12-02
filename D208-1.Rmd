@@ -19,19 +19,33 @@ output:
 </br>
 
 ## Part I
-
+___
 ### A1: Research Question
 
-What variables from the medical dataset are related to and influence a patient's initial number of days spent after hospitalization? In terms of hypothesis testing, our null hypothesis (H0) is, "No combination of variables included in the medical dataset are related to initial length of stay in any statistically significant way. Additionally, our alternate hypothesis (H1) is, "Some combination of variables included in the medical dataset are related to initial length of stay in a statistically significant way".
+The central research question addressed by this analysis is to determine:
 
-### A2: Objectives and Goals
+>What variables from the medical dataset influence a patient's initial total days spent hospitalized (`Initial_days`)? 
 
-The main goal of the following analysis is to determine what variables, if any, contribute positively to a patient's initial number of days hospitalized. This will be assessed using the R programming language and the technique of multiple regression to identify a meaningful model.
+In terms of hypothesis testing, our null hypothesis ($H_0$) is:
+
+>No combination of variables included in the medical dataset influence initial length of stay (`Initial_days`) in any statistically significant way.
+
+Additionally, our alternate hypothesis ($H_1$) is:
+
+>Some combination of variables included in the medical dataset influence initial length of stay (`Initial_days`) in a statistically significant way.
 
 </br>
 
-## Part II
+### A2: Objectives and Goals
 
+The primary goal of the following analysis is to determine what variables, if any, contribute positively to a patient's initial number of days hospitalized (`Initial_days`). This will be assessed using the $\mbox{R}$ programming language and using the technique of multiple linear regression to identify causal relationships between independent variables and the target variable.
+
+___
+</br>
+</br>
+
+## Part II
+___
 ### B1: Summary of Assumptions
 
 The following are basic assumptions of multiple linear regression:
@@ -41,23 +55,68 @@ The following are basic assumptions of multiple linear regression:
 -   The assumption of non-multicollinearity of explanatory variables
 -   The assumption that residual values are homoscedastic
 
+</br>
+
 ### B2: Tool Benefits
 
-The programming language of choice for this analysis will be the R programming language. Previously, Python has been the language most utilized, however R happens to handle the tasks of regression exceptionally well and thus became the self-evident choice for multiple regression analysis. In particular, the built-in functions of the base R language used to fit models are incredibly simple to navigate as well as demonstrate. Additionally, the reduction process using the `ols_step_backward_p()` function in particular made the process even easier. It is for good reason that R has a reputation for handling regression models.
+The programming language of choice for this analysis, as previously mentioned, will be the $\mbox{R}$ programming language. Previously, this author has used Python to perform cleaning, transformation, and analysis. Python has been more than up to the task. However, $\mbox{R}$ happens to handle the process of regression analysis and model selection exceptionally well and thus became the self-evident choice for multiple regression analysis. In particular, the built-in functions of the base $\mbox{R}$ language, as used to fit models, are incredibly simple to navigate and equally as easy to demonstrate. Additionally, the reduction process using the `ols_step_backward_p()` function, as another example, made the task of choosing which programming language to use for this project even easier. It is with good reason that $\mbox{R}$ has such a stellar reputation for handling regression models.
+
+</br>
 
 ### B3: Appropriate Technique
 
-Multiple regression is an appropriate technique to use to accomplish our goal of finding which variable contribute to a longer initial length of stay for several reasons. Firstly, the dataset contains 50 total variables of varying significance and utility. While some variable do not require much thought prior to elimination, some are not quite as straightforward. Therefore, running them through a multiple regression model prior to discarding them is a worthwhile venture. Additionally, multiple regression will allow us to see the significance of each variable's discrete contribution to the target variable as well as the interaction between explanatory variables themselves. Overall, regarding our objective, multiple regression is more than up to the task.
+Multiple regression is an appropriate technique to use to accomplish our goal of finding which variables contribute to a longer initial length of stay (`Initial_days`) for several reasons. Firstly, the dataset we will analyze contains 50 variables in total, each of disparate significance and utility. While some variable do not require much thought prior to elimination, others are not quite as straightforward. Therefore, running them through a multiple regression model prior to discarding them is an appropriate course of action. Additionally, multiple regression will allow us to see the significance of each variable's discrete contribution to the target variable as well as the interaction between explanatory variables themselves. Overall, regarding our objective, multiple regression is more than up to the task and will adequately suit our objectives.
 
+___
+</br>
 </br>
 
 ## Part III
 
+___
+
 ### C1: Data Goals
+
+The process we will need to take to prepare the data for model selection is relatively minor, given that the raw dataset used in this project has already been cleaned in a prior project (see project D206 - Data Cleaning). Using the pre-cleaned dataset, we will first partition the data to include only those variables we intend to feed into our initial model. Because the model selection process we will use is backward-oriented, this initial model will include all features that could possibly have a relationship to the target variable of initial length of hospitalization (`Initial_days`). This will include a mix of numeric and categorical variables. 
+
+Next, we will need to ensure that the data type of each variable is appropriate for that kind of feature. For example, we will determine which categorical variables are nominal and which would benefit from ordinal encoding. Once the dataset for the initial model has been partitioned and transformed (or converted to the right type, at least), we will look over the dataset to ensure that we have not created any problems in the process such as silently introducing null values.
+
+</br>
 
 ### C2: Summary Statistics
 
+In order to get the best understanding of the selected features and their measures of central tendency, we will use an amazing library called `skimr` which does a phenomenal job of not only providing a great default summary view of the entire dataframe, but also allows one to customize the output. First, we will fashion a version of the skim function purpose-built for our needs here and print the output.
+
+```{r}
+# Set custom skim() for C2: Summary Statistics
+# For numeric include mean, median, stdev, min, Q25, Q75, and max
+# For factor include count of unique values and value counts for each
+my_skim <- skim_with(
+  base = sfl(),
+  numeric = sfl(Mean = mean,
+                Median = median,
+                StDev = sd,
+                Min = min,
+                Q25 = ~ quantile(., probs = .25),
+                Q75 = ~ quantile(., probs = .75),
+                Max = max),
+  factor = sfl(Unique_Values = n_unique,
+               Value_Counts = top_counts),
+  append = FALSE
+)
+
+# Call new skim format
+my_skim(init_mdl)
+```
+
+
+The `skim()` output virtually speaks for itself. Our partitioned data for the initial model includes a total of 29 variables comprised of 10 numeric and 19 factor (or categorical) variables. There are a total of 10,000 rows. For the categorical variables, we have shown the names of each variable, total number of unique values for each, and the sum of each unique value for each variable respectively. Additionally, for our 10 numeric type variables, we are provided with each variable's name followed by the mean, median, standard deviation, minimum value, lower quartile (.25), upper quartile (.75), and maximum value respectively. This summary gives us an excellent feel for the selected features for our initial model.
+
+</br>
+
 ### C3: Steps to Prepare the Data
+
+Now, we will begin the process of preparing the dataset, starting with loading in the necessary libraries and reading-in the cleaned dataset.
 
 ```{r}
 # Load in the tidyverse
@@ -69,9 +128,7 @@ library(skimr)
 ```{r}
 # Read dataset in
 df <- read.csv("./data/medical_clean.csv")
-```
 
-```{r}
 # Start with a quick glimpse of the data for orientation and future reference
 glimpse(df)
 ```
@@ -87,15 +144,13 @@ init_mdl <- df %>%
          Children:Services,
          TotalCharge,
          Additional_charges)
-```
 
-```{r}
 # View new dataframe and assess dtypes
 init_mdl %>%
   glimpse()
 ```
 
-We will next need to convert the dtypes of many our variables. Since there are not any variables needing type class conversion other than those which are currently of the type Character, we will simply select all of those variables at once and convert them to factor variables. This will ensure that the model handles the variables as intended.
+We will next need to convert the data types of many our variables. Since there are not any variables needing type class conversion other than those which are currently of the type character, we will simply select all of those variables at once and convert them to factor variables. This will ensure that the model handles the variables as intended.
 
 ```{r}
 # Start with reformatting all chr variables as fct
@@ -147,28 +202,49 @@ is.ordered(init_mdl$Complication_risk)
 
 Now that we have validated our conversion process and the composition of our data, we can now proceed with the model selection process. 
 
+</br>
 
 ### C4: Visualizations
 
+</br>
+
 ### C5: Prepared Data Set
 
+___
+
+</br>
 </br>
 
 ## Part IV
 
+___
+
 ### D1: Initial Model
+
+</br>
 
 ### D2: Justification of Model Reduction
 
+</br>
+
 ### D3: Reduced Multiple Regression Model
 
+___
+
+</br>
 </br>
 
 ## Part V
 
+___
+
 ### E1: Model Comparison
 
+</br>
+
 ### E2: Output and Calculations
+
+</br>
 
 ### E3: Code
 
@@ -216,14 +292,28 @@ reduced_mdl <- lm(Initial_days ~
 summary(reduced_mdl)
 ```
 
+___
+
+</br>
 </br>
 
 ## Part VI
 
-### F1: Results
+___
 
-### F2: Recommendations
+### F1: Results
 
 </br>
 
+### F2: Recommendations
+
+___
+
+</br>
+</br>
+</br>
+
+
 ### I: Sources
+
+___
