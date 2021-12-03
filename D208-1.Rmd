@@ -123,6 +123,7 @@ Now, we will begin the process of preparing the dataset, starting with loading i
 # Suppress the overwritten functions messages
 suppressPackageStartupMessages(library(tidyverse))
 library(skimr)
+library(Hmisc)
 ```
 
 ```{r}
@@ -175,12 +176,13 @@ is.ordered(init_mdl$Complication_risk)
 OK, our assumptions were valid. Now, let's fix them.
 
 ```{r}
+# Re-level ordinal categorical variables for Initial_admin
 init_mdl$Initial_admin <- factor(init_mdl$Initial_admin,
                                  levels = c("Elective Admission",
                                             "Observation Admission",
                                             "Emergency Admission"),
                                  ordered = TRUE)
-
+# Re-level ordinal categorical variables for Complication_risk
 init_mdl$Complication_risk <- factor(init_mdl$Complication_risk,
                                  levels = c("Low",
                                             "Medium",
@@ -205,6 +207,22 @@ Now that we have validated our conversion process and the composition of our dat
 </br>
 
 ### C4: Visualizations
+
+#### Univariate:
+
+```{r}
+# Show histograms for all numeric variables
+par(mfrow = c(3,4))
+hist(init_mdl %>% 
+     select_if(is.numeric))
+```
+
+```{r}
+init_mdl %>% 
+  gather(~n_unique(.) == 2)
+
+```
+
 
 </br>
 
