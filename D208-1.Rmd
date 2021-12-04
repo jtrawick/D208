@@ -119,9 +119,8 @@ The `skim()` output virtually speaks for itself. Our partitioned data for the in
 Now, we will begin the process of preparing the dataset, starting with loading in the necessary libraries and reading-in the cleaned dataset.
 
 ```{r}
-# Load in the tidyverse
-# Suppress the overwritten functions messages
-suppressPackageStartupMessages(library(tidyverse))
+# Load in the tidyverse, skimr, and Hmisc
+library(tidyverse)
 library(skimr)
 library(Hmisc)
 ```
@@ -130,8 +129,8 @@ library(Hmisc)
 # Read dataset in
 df <- read.csv("./data/medical_clean.csv")
 
-# Start with a quick glimpse of the data for orientation and future reference
-glimpse(df)
+# Start with a quick skim of the data for orientation and future reference
+skim(df)
 ```
 
 Immediately we will drop variables that, at this time, are unnecessary for our objective and keep the rest.
@@ -148,7 +147,7 @@ init_mdl <- df %>%
 
 # View new dataframe and assess dtypes
 init_mdl %>%
-  glimpse()
+  skim()
 ```
 
 We will next need to convert the data types of many our variables. Since there are not any variables needing type class conversion other than those which are currently of the type character, we will simply select all of those variables at once and convert them to factor variables. This will ensure that the model handles the variables as intended.
@@ -210,6 +209,8 @@ Now that we have validated our conversion process and the composition of our dat
 
 #### Univariate:
 
+Now we will show all of our model's variables using both univariate and bivariate visualizations. We'll start with univariate histograms of the numeric variables, then we'll look at bar charts for all of our categorical variables.
+
 ```{r}
 # Show histograms for all numeric variables
 par(mfrow = c(3,4))
@@ -218,16 +219,79 @@ hist(init_mdl %>%
 ```
 
 ```{r}
-init_mdl %>% 
-  gather(~n_unique(.) == 2)
+# Partition dichotomous Yes/No variables out for plot
+dichotomous_vars <- init_mdl %>% 
+  select(where(~n_distinct(.) == 2))
+
+# Show bar charts of all Yes/No variables
+dichotomous_vars %>%
+  gather() %>%
+  count(key, value) %>% 
+  ggplot(., aes(x = value, y = n)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~key, scales = "free", nrow = 3)
+```
+
+```{r}
+# Partition non-dichotomous categorical variables
+cat_vars <- init_mdl %>% 
+  select_if(is.factor) %>% 
+  select(where(~n_distinct(.) != 2))
+
+# Rename levels to shorter versions to fit plots
+levels(cat_vars$Marital) <- c("Divorced",
+                              "Married",
+                              "Never",
+                              "Sep",
+                              "Widow")
+levels(cat_vars$Initial_admin) <- c("Elective",
+                                    "Observation",
+                                    "Emergency")
 
 ```
 
+```{r}
+# Create panel of bar charts for cat_vars
+par(mfrow = c(3,2))
+barplot(table(cat_vars$Area), main = "Geographical Area")
+barplot(table(cat_vars$Marital), main = "Marital Status")
+barplot(table(cat_vars$Gender), main = "Gender")
+barplot(table(cat_vars$Initial_admin), main = "Reason for Initial Admission")
+barplot(table(cat_vars$Complication_risk), main = "Complication Risk")
+barplot(table(cat_vars$Services), main = "Services Used")
+```
+
+</br>
+
+#### Bivariate:
+
+Now we will get a different view of the data using scatter and box plots to dive a little deeper.
+
+```{r}
+# Partition model data for only numeric variables
+num_vars <- init_mdl %>% 
+  select_if(is.numeric)
+
+# Show scatterplot matrix of numeric variables
+pairs(num_vars)
+```
+
+```{r}
+# Boxplots of our target variable against some categorical variables
+par(mfrow = c(2,3))
+boxplot(Initial_days ~ Complication_risk, data = init_mdl)
+boxplot(Initial_days ~ Gender, data = init_mdl)
+boxplot(Initial_days ~ Overweight, data = init_mdl)
+boxplot(Initial_days ~ Anxiety, data = init_mdl)
+boxplot(Initial_days ~ ReAdmis, data = init_mdl)
+boxplot(Initial_days ~ Initial_admin, data = init_mdl)
+```
 
 </br>
 
 ### C5: Prepared Data Set
 
+For prepared dataset, please see attached .csv file.
 ___
 
 </br>
@@ -238,6 +302,8 @@ ___
 ___
 
 ### D1: Initial Model
+
+
 
 </br>
 
