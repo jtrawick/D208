@@ -87,7 +87,8 @@ Next, we will need to ensure that the data type of each variable is appropriate 
 
 In order to get the best understanding of the selected features and their measures of central tendency, we will use an amazing library called `skimr` which does a phenomenal job of not only providing a great default summary view of the entire dataframe, but also allows one to customize the output. First, we will fashion a version of the skim function purpose-built for our needs here and print the output.
 
-```{r}
+<!-- USE FOR FINAL DOCUMENT -->
+<!-- ```{r} -->
 # Set custom skim() for C2: Summary Statistics
 # For numeric include mean, median, stdev, min, Q25, Q75, and max
 # For factor include count of unique values and value counts for each
@@ -107,7 +108,7 @@ my_skim <- skim_with(
 
 # Call new skim format
 my_skim(init_mdl)
-```
+<!-- ``` -->
 
 
 The `skim()` output virtually speaks for itself. Our partitioned data for the initial model includes a total of 29 variables comprised of 10 numeric and 19 factor (or categorical) variables. There are a total of 10,000 rows. For the categorical variables, we have shown the names of each variable, total number of unique values for each, and the sum of each unique value for each variable respectively. Additionally, for our 10 numeric type variables, we are provided with each variable's name followed by the mean, median, standard deviation, minimum value, lower quartile (.25), upper quartile (.75), and maximum value respectively. This summary gives us an excellent feel for the selected features for our initial model.
@@ -119,10 +120,13 @@ The `skim()` output virtually speaks for itself. Our partitioned data for the in
 Now, we will begin the process of preparing the dataset, starting with loading in the necessary libraries and reading-in the cleaned dataset.
 
 ```{r}
-# Load in the tidyverse, skimr, and Hmisc
-library(tidyverse)
-library(skimr)
-library(Hmisc)
+# Load in packages without messages
+suppressMessages(library(tidyverse))
+suppressMessages(library(skimr))
+suppressMessages(library(Hmisc))
+suppressMessages(library(broom))
+suppressMessages(library(olsrr))
+suppressMessages(library(car))
 ```
 
 ```{r}
@@ -141,9 +145,7 @@ Immediately we will drop variables that, at this time, are unnecessary for our o
 init_mdl <- df %>%
   select(Initial_days,
          Area,
-         Children:Services,
-         TotalCharge,
-         Additional_charges)
+         Children:Services)
 
 # View new dataframe and assess dtypes
 init_mdl %>%
@@ -160,33 +162,27 @@ init_mdl[sapply(init_mdl, is.character)] <- lapply(init_mdl[sapply(init_mdl, is.
 skim_without_charts(init_mdl)
 ```
 
-This `skim()` view of the dataframe is quite useful. It shows the dataframes is comprised of two data types: factor and numeric. Thus, it appears we were successful in converting our columns to factors. The majority of the variables included are either dichotomous or otherwise nominal categorical variables. We do, however, have a couple of variables that likely would benefit from ordinal encoding. The previous code was convenient for converting a relatively large group of variables to factors all at once, but does not consider levels. Thus, we will take to re-leveling our ordinal variables (Initial_admin and Complication_risk) below. First, let's just verify our assumptions by accessing these variables' levels and asking whether or not the variable is indeed ordered.
+This `skim()` view of the dataframe is quite useful. It shows the dataframes is comprised of two data types: factor and numeric. Thus, it appears we were successful in converting our columns to factors. The majority of the variables included are either dichotomous or otherwise nominal categorical variables. We do, however, have a couple of variables that likely would benefit from changing the reference category. The previous code was convenient for converting a relatively large group of variables to factors all at once, but does not consider levels. Thus, we will take to changing the reference level for two variables (Initial_admin and Complication_risk) below. First, let's just verify our assumptions by accessing these variables' levels to determine which category comes first. If our model is attempting to discover what features contribute to a longer initial length of hospitalization, it would be helpful to have the least likely contributor be the reference category, such that the coefficients are positively oriented. Based on measures of central tendency for these two variables, Emergency Admission for `Initial_admin` and Medium `Complication_risk` have the lowest combination of median, mean and standard deviation and will be reset as the reference category for their respective variable.
 
 ```{r}
 # Access levels() for each variable
 levels(init_mdl$Initial_admin)
 levels(init_mdl$Complication_risk)
-
-# Check if the factor is ordered
-is.ordered(init_mdl$Initial_admin)
-is.ordered(init_mdl$Complication_risk)
 ```
 
-OK, our assumptions were valid. Now, let's fix them.
+OK, our assumptions about the order were valid. Now, let's fix them.
 
 ```{r}
 # Re-level ordinal categorical variables for Initial_admin
 init_mdl$Initial_admin <- factor(init_mdl$Initial_admin,
-                                 levels = c("Elective Admission",
+                                 levels = c("Emergency Admission",
                                             "Observation Admission",
-                                            "Emergency Admission"),
-                                 ordered = TRUE)
+                                            "Elective Admission"))
 # Re-level ordinal categorical variables for Complication_risk
 init_mdl$Complication_risk <- factor(init_mdl$Complication_risk,
-                                 levels = c("Low",
-                                            "Medium",
-                                            "High"),
-                                 ordered = TRUE)
+                                 levels = c("Medium",
+                                            "Low",
+                                            "High"))
 ```
 
 Finally, we will check again to make sure the above worked as intended.
@@ -195,10 +191,6 @@ Finally, we will check again to make sure the above worked as intended.
 # Access levels() for each variable
 levels(init_mdl$Initial_admin)
 levels(init_mdl$Complication_risk)
-
-# Check if the factor is ordered
-is.ordered(init_mdl$Initial_admin)
-is.ordered(init_mdl$Complication_risk)
 ```
 
 Now that we have validated our conversion process and the composition of our data, we can now proceed with the model selection process. 
@@ -292,6 +284,10 @@ boxplot(Initial_days ~ Initial_admin, data = init_mdl)
 ### C5: Prepared Data Set
 
 For prepared dataset, please see attached .csv file.
+```{r}
+write.csv()
+```
+
 ___
 
 </br>
@@ -302,16 +298,19 @@ ___
 ___
 
 ### D1: Initial Model
-
+<!-- Construct an initial multiple regression model from all predictors that were identified in Part C2. -->
+The initial model will consist of essentially any 
 
 
 </br>
 
 ### D2: Justification of Model Reduction
+<!-- Justify a statistically based variable selection procedure and a model evaluation metric to reduce the initial model in a way that aligns with the research question. -->
 
 </br>
 
 ### D3: Reduced Multiple Regression Model
+<!-- Provide a reduced multiple regression model that includes both categorical and continuous variables. -->
 
 ___
 
@@ -324,57 +323,110 @@ ___
 
 ### E1: Model Comparison
 
+<!-- Explain your data analysis process by comparing the initial and reduced multiple regression models, including the following elements: -->
+
+<!-- •  the logic of the variable selection technique -->
+
+<!-- •  the model evaluation metric -->
+
+<!-- •  a residual plot -->
+
+
 </br>
 
 ### E2: Output and Calculations
+
+<!-- Provide the output and any calculations of the analysis you performed, including the model’s residual error. -->
+
 
 </br>
 
 ### E3: Code
 
-```{r}
-init_mdl <- lm(Initial_days ~
-               Age +
-               Gender +
-               ReAdmis +
-               VitD_levels +
-               Doc_visits +
-               Full_meals_eaten +
-               vitD_supp +
-               Soft_drink +
-               Initial_admin +
-               HighBlood +
-               Stroke +
-               Complication_risk +
-               Overweight +
-               Arthritis +
-               Diabetes +
-               Hyperlipidemia +
-               BackPain +
-               Anxiety +
-               Allergic_rhinitis +
-               Reflux_esophagitis +
-               Asthma +
-               Services,
-               data = df_mdl)
+<!-- Provide the code used to support the implementation of the multiple regression models. -->
 
-summary(init_mdl)
+```{r}
+# Assign full initial model (using all previously selected vars) to mdl_fit
+mdl_fit <- lm(Initial_days ~ . -TotalCharge -Additional_charges,
+              data = init_mdl)
+# View summary of initial model
+summary(mdl_fit)
+```
+
+<!-- While this view is the most useful for our purposes, and given that our initial model contains 29 features, it would be helpful to be able to view the summary output for the model in a way that allows us to sort by our selection criteria. To do this, we will use the `broom` package to create a dataframe from the `summary(mdl_fit)` output and sort by the P Value column. Our selection criteria is such that features with a t-statistic p-value of greater than 0.05 (95% confidence level of statistical significance) and, consequently, a high t-statistic value, will be eliminated from the model. Each step in the selection process, the coefficient with the highest t-statistic value and p-value will be considered for elimination unless there is a compelling reason to make an exception. -->
+
+# ```{r}
+# # Create dataframe mdl_output from summary(mdl_fit) using tidy()
+# mdl_output <- as.data.frame(tidy(mdl_fit))
+# 
+# # Sort mdl_output coefficients by p-value from largest to smallest
+# mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ]
+# mdl_output
+# ```
+
+# ```{r}
+# # Create empty list for excluded variables
+# ex_vars <- c()
+# 
+# # Pass coefficient to be eliminated into ex_vars
+# ex_vars <- append(ex_vars,
+#                   mdl_output[1,1])
+# 
+# # Create formula as mdl_form to be passed into mdl_fit
+# mdl_form <- as.formula(paste("Initial_days",
+#                              paste(ex_vars,
+#                                    collapse = " - "),
+#                              sep = " ~ . -"))
+# 
+# # Adjust original model using list of excluded vars
+# mdl_fit <- lm(mdl_form,
+#               data = init_mdl)
+# 
+# # View summary of initial model
+# summary(mdl_fit)
+# ```
+
+# ```{r}
+# # Create dataframe mdl_output from summary(mdl_fit) using tidy()
+# mdl_output <- as.data.frame(tidy(mdl_fit))
+# 
+# # Sort mdl_output coefficients by p-value from largest to smallest
+# mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ]
+# mdl_output
+# ```
+
+
+
+# ```{r}
+# library()
+# newmdl <- regsubsets(Initial_days ~ ., init_mdl, method = "backward")
+# summary(newmdl)
+# ```
+
+
+```{r}
+mdl_back <- ols_step_backward_p(mdl_fit, details = TRUE, prem = .1)
+
+mdl_fwd <- ols_step_forward_p(mdl_fit, details = TRUE, penter = .1)
+
+mdl_both <- ols_step_both_p(mdl_fit, details = TRUE, pent = .1, prem = .1)
 ```
 
 ```{r}
-df_mdl_emergadmin <- df_mdl %>%
-    filter(Initial_admin == "Emergency Admission")
+ols_step_backward_p(mdl_fit, details = TRUE)
 ```
 
-```{r}
-reduced_mdl <- lm(Initial_days ~
-                  VitD_levels +
-                  0 +
-                  ReAdmis,
-                  data = df_mdl_emergadmin)
-
-summary(reduced_mdl)
+````{r}
+ols_step_both_p(mdl_fit, details = TRUE)
 ```
+````{r}
+ols_step_best_subset(mdl_fit, details = TRUE)
+```
+
+# ```{r}
+# plot(mdl_fit)
+# ```
+
 
 ___
 
@@ -387,9 +439,22 @@ ___
 
 ### F1: Results
 
+<!-- Discuss the results of your data analysis, including the following elements: -->
+
+<!-- •  a regression equation for the reduced model -->
+
+<!-- •  an interpretation of coefficients of the statistically significant variables of the model -->
+
+<!-- •  the statistical and practical significance of the model -->
+
+<!-- •  the limitations of the data analysis -->
+
+
 </br>
 
 ### F2: Recommendations
+
+<!-- Recommend a course of action based on your results. -->
 
 ___
 
