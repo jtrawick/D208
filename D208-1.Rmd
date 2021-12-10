@@ -89,25 +89,25 @@ In order to get the best understanding of the selected features and their measur
 
 <!-- USE FOR FINAL DOCUMENT -->
 <!-- ```{r} -->
-# Set custom skim() for C2: Summary Statistics
-# For numeric include mean, median, stdev, min, Q25, Q75, and max
-# For factor include count of unique values and value counts for each
-my_skim <- skim_with(
-  base = sfl(),
-  numeric = sfl(Mean = mean,
-                Median = median,
-                StDev = sd,
-                Min = min,
-                Q25 = ~ quantile(., probs = .25),
-                Q75 = ~ quantile(., probs = .75),
-                Max = max),
-  factor = sfl(Unique_Values = n_unique,
-               Value_Counts = top_counts),
-  append = FALSE
-)
+<!-- # Set custom skim() for C2: Summary Statistics -->
+<!-- # For numeric include mean, median, stdev, min, Q25, Q75, and max -->
+<!-- # For factor include count of unique values and value counts for each -->
+<!-- my_skim <- skim_with( -->
+<!--   base = sfl(), -->
+<!--   numeric = sfl(Mean = mean, -->
+<!--                 Median = median, -->
+<!--                 StDev = sd, -->
+<!--                 Min = min, -->
+<!--                 Q25 = ~ quantile(., probs = .25), -->
+<!--                 Q75 = ~ quantile(., probs = .75), -->
+<!--                 Max = max), -->
+<!--   factor = sfl(Unique_Values = n_unique, -->
+<!--                Value_Counts = top_counts), -->
+<!--   append = FALSE -->
+<!-- ) -->
 
-# Call new skim format
-my_skim(init_mdl)
+<!-- # Call new skim format -->
+<!-- my_skim(init_mdl) -->
 <!-- ``` -->
 
 
@@ -134,7 +134,7 @@ suppressMessages(library(car))
 df <- read.csv("./data/medical_clean.csv")
 
 # Start with a quick skim of the data for orientation and future reference
-skim(df)
+(df)
 ```
 
 Immediately we will drop variables that, at this time, are unnecessary for our objective and keep the rest.
@@ -265,7 +265,7 @@ num_vars <- init_mdl %>%
   select_if(is.numeric)
 
 # Show scatterplot matrix of numeric variables
-pairs(num_vars)
+pairs(num_vars, )
 ```
 
 ```{r}
@@ -285,7 +285,7 @@ boxplot(Initial_days ~ Initial_admin, data = init_mdl)
 
 For prepared dataset, please see attached .csv file.
 ```{r}
-write.csv()
+write.csv(init_mdl, "./data/initmdl.csv")
 ```
 
 ___
@@ -298,14 +298,62 @@ ___
 ___
 
 ### D1: Initial Model
-<!-- Construct an initial multiple regression model from all predictors that were identified in Part C2. -->
-The initial model will consist of essentially any 
 
+The initial model will consist of essentially any potentially relevant independent variables. The initial model will then be evaluated and reduced using a combination of backward and stepwise selection. Considering the linear regression equation is as follows:
+
+$\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i + \hat{\beta}_2 x_i + \hat{\epsilon}_i$
+
+and that the number of coefficients is equal to the number of independent variables, our initial model looks something like this:
+
+$$
+\begin{align}
+\hat{\text{Initial_days}}_i = \hat{\beta}_0
+    &+ \hat{\beta}_1 \text{AreaSuburban}_i \\
+    &+ \hat{\beta}_2 \text{AreaUrban}_i \\
+    &+ \hat{\beta}_3 \text{Children}_i \\
+    &+ \hat{\beta}_4 \text{Age}_i \\
+    &+ \hat{\beta}_5 \text{Income}_i \\
+    &+ \hat{\beta}_6 \text{MaritalMarried}_i \\
+    &+ \hat{\beta}_7 \text{MaritalNever Married}_i \\
+    &+ \hat{\beta}_8 \text{MaritalSeparated}_i \\
+    &+ \hat{\beta}_9 \text{MaritalWidowed}_i \\
+    &+ \hat{\beta}_{10} \text{GenderMale}_i \\
+    &+ \hat{\beta}_{11} \text{GenderNonbinary}_i \\
+    &+ \hat{\beta}_{12} \text{ReAdmisYes}_i \\
+    &+ \hat{\beta}_{13} \text{VitD_levels}_i \\
+    &+ \hat{\beta}_{14} \text{Doc_visits}_i \\
+    &+ \hat{\beta}_{15} \text{Full_meals_eaten}_i \\
+    &+ \hat{\beta}_{16} \text{Soft_drinkYes}_i \\
+    &+ \hat{\beta}_{17} \text{Initial_adminObservation Admission}_i \\
+    &+ \hat{\beta}_{18} \text{Initial_adminElective Admission}_i \\
+    &+ \hat{\beta}_{19} \text{HighBloodYes}_i \\
+    &+ \hat{\beta}_{20} \text{StrokeYes}_i \\
+    &+ \hat{\beta}_{21} \text{Complication_riskLow}_i \\
+    &+ \hat{\beta}_{22} \text{Complication_riskHigh}_i \\
+    &+ \hat{\beta}_{23} \text{OverweightYes}_i \\
+    &+ \hat{\beta}_{24} \text{ArthritisYes}_i \\
+    &+ \hat{\beta}_{25} \text{DiabetesYes}_i \\
+    &+ \hat{\beta}_{26} \text{BackPainYes}_i \\
+    &+ \hat{\beta}_{27} \text{AnxietyYes}_i \\
+    &+ \hat{\beta}_{28} \text{Allergic_rhinitisYes}_i \\
+    &+ \hat{\beta}_{29} \text{Reflux_esophagitisYes}_i \\
+    &+ \hat{\beta}_{30} \text{AsthmaYes}_i \\
+    &+ \hat{\beta}_{31} \text{ServicesCT Scan}_i \\
+    &+ \hat{\beta}_{32} \text{ServicesIntravenous}_i \\
+    &+ \hat{\beta}_{33} \text{ServicesMRI}_i + \hat{\epsilon_i}
+\end{align}
+$$
+
+Though that equation is quite unwieldy, our initial model is designed to include the maximum amount of predictor features that can reasonably be included and potentially relate to the target feature. The model also includes factor variables broken-out as dummy variables, which adds to the length of the model. In terms of our multiple regression formula in $\mbox{R}$, we've already cleaned and transformed our dataframe for the initial model, so the formula is much more concise: `Initial_days ~ ., data = init_mdl)`
 
 </br>
 
 ### D2: Justification of Model Reduction
 <!-- Justify a statistically based variable selection procedure and a model evaluation metric to reduce the initial model in a way that aligns with the research question. -->
+
+Our variable selection process includes the use of three stepwise elimination methods, namely backward, forward, and bidirectional stepwise elimination. The three selection methods are similar in approach, but each can result in substantively different models. Using all three will, therefore, allow us to analyze and evaluate the resulting models from each and choose the model that works best for our initial business question/hypothesis test: what relates to and/or influences a patient's initial length of hospitalization.
+
+Our feature selection criteria for each model reduction process will be the comparison of t-statistic p-value and whether or not it meets the threshold of .1 
 
 </br>
 
@@ -347,7 +395,7 @@ ___
 
 ```{r}
 # Assign full initial model (using all previously selected vars) to mdl_fit
-mdl_fit <- lm(Initial_days ~ . -TotalCharge -Additional_charges,
+mdl_fit <- lm(Initial_days ~ .,
               data = init_mdl)
 # View summary of initial model
 summary(mdl_fit)
@@ -355,57 +403,57 @@ summary(mdl_fit)
 
 <!-- While this view is the most useful for our purposes, and given that our initial model contains 29 features, it would be helpful to be able to view the summary output for the model in a way that allows us to sort by our selection criteria. To do this, we will use the `broom` package to create a dataframe from the `summary(mdl_fit)` output and sort by the P Value column. Our selection criteria is such that features with a t-statistic p-value of greater than 0.05 (95% confidence level of statistical significance) and, consequently, a high t-statistic value, will be eliminated from the model. Each step in the selection process, the coefficient with the highest t-statistic value and p-value will be considered for elimination unless there is a compelling reason to make an exception. -->
 
-# ```{r}
-# # Create dataframe mdl_output from summary(mdl_fit) using tidy()
-# mdl_output <- as.data.frame(tidy(mdl_fit))
-# 
-# # Sort mdl_output coefficients by p-value from largest to smallest
-# mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ]
-# mdl_output
-# ```
+<!-- # ```{r} -->
+<!-- # # Create dataframe mdl_output from summary(mdl_fit) using tidy() -->
+<!-- # mdl_output <- as.data.frame(tidy(mdl_fit)) -->
+<!-- #  -->
+<!-- # # Sort mdl_output coefficients by p-value from largest to smallest -->
+<!-- # mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ] -->
+<!-- # mdl_output -->
+<!-- # ``` -->
 
-# ```{r}
-# # Create empty list for excluded variables
-# ex_vars <- c()
-# 
-# # Pass coefficient to be eliminated into ex_vars
-# ex_vars <- append(ex_vars,
-#                   mdl_output[1,1])
-# 
-# # Create formula as mdl_form to be passed into mdl_fit
-# mdl_form <- as.formula(paste("Initial_days",
-#                              paste(ex_vars,
-#                                    collapse = " - "),
-#                              sep = " ~ . -"))
-# 
-# # Adjust original model using list of excluded vars
-# mdl_fit <- lm(mdl_form,
-#               data = init_mdl)
-# 
-# # View summary of initial model
-# summary(mdl_fit)
-# ```
+<!-- # ```{r} -->
+<!-- # # Create empty list for excluded variables -->
+<!-- # ex_vars <- c() -->
+<!-- #  -->
+<!-- # # Pass coefficient to be eliminated into ex_vars -->
+<!-- # ex_vars <- append(ex_vars, -->
+<!-- #                   mdl_output[1,1]) -->
+<!-- #  -->
+<!-- # # Create formula as mdl_form to be passed into mdl_fit -->
+<!-- # mdl_form <- as.formula(paste("Initial_days", -->
+<!-- #                              paste(ex_vars, -->
+<!-- #                                    collapse = " - "), -->
+<!-- #                              sep = " ~ . -")) -->
+<!-- #  -->
+<!-- # # Adjust original model using list of excluded vars -->
+<!-- # mdl_fit <- lm(mdl_form, -->
+<!-- #               data = init_mdl) -->
+<!-- #  -->
+<!-- # # View summary of initial model -->
+<!-- # summary(mdl_fit) -->
+<!-- # ``` -->
 
-# ```{r}
-# # Create dataframe mdl_output from summary(mdl_fit) using tidy()
-# mdl_output <- as.data.frame(tidy(mdl_fit))
-# 
-# # Sort mdl_output coefficients by p-value from largest to smallest
-# mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ]
-# mdl_output
-# ```
+<!-- # ```{r} -->
+<!-- # # Create dataframe mdl_output from summary(mdl_fit) using tidy() -->
+<!-- # mdl_output <- as.data.frame(tidy(mdl_fit)) -->
+<!-- #  -->
+<!-- # # Sort mdl_output coefficients by p-value from largest to smallest -->
+<!-- # mdl_output <- mdl_output[order(mdl_output$p.value, decreasing = TRUE), ] -->
+<!-- # mdl_output -->
+<!-- # ``` -->
 
 
 
-# ```{r}
-# library()
-# newmdl <- regsubsets(Initial_days ~ ., init_mdl, method = "backward")
-# summary(newmdl)
-# ```
+<!-- # ```{r} -->
+<!-- # library() -->
+<!-- # newmdl <- regsubsets(Initial_days ~ ., init_mdl, method = "backward") -->
+<!-- # summary(newmdl) -->
+<!-- # ``` -->
 
 
 ```{r}
-mdl_back <- ols_step_backward_p(mdl_fit, details = TRUE, prem = .1)
+mdl_back <- ols_step(mdl_fit, details = TRUE, prem = .1)
 
 mdl_fwd <- ols_step_forward_p(mdl_fit, details = TRUE, penter = .1)
 
