@@ -453,7 +453,7 @@ summary(mdl_fit)
 
 
 ```{r}
-mdl_back <- ols_step(mdl_fit, details = TRUE, prem = .1)
+mdl_back <- ols_step_backward_p(mdl_fit, details = TRUE, prem = .1)
 
 mdl_fwd <- ols_step_forward_p(mdl_fit, details = TRUE, penter = .1)
 
