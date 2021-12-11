@@ -145,7 +145,8 @@ Immediately we will drop variables that, at this time, are unnecessary for our o
 init_mdl <- df %>%
   select(Initial_days,
          Area,
-         Children:Services)
+         Children:Services,
+         Additional_charges)
 
 # View new dataframe and assess dtypes
 init_mdl %>%
@@ -340,11 +341,16 @@ $$
     &+ \hat{\beta}_{30} \text{AsthmaYes}_i \\
     &+ \hat{\beta}_{31} \text{ServicesCT Scan}_i \\
     &+ \hat{\beta}_{32} \text{ServicesIntravenous}_i \\
-    &+ \hat{\beta}_{33} \text{ServicesMRI}_i + \hat{\epsilon_i}
+    &+ \hat{\beta}_{33} \text{ServicesMRI}_i \\ 
+    &+ \hat{\beta}_{34} \text{Additional_charges}_i + \hat{\epsilon_i}
 \end{align}
 $$
 
-Though that equation is quite unwieldy, our initial model is designed to include the maximum amount of predictor features that can reasonably be included and potentially relate to the target feature. The model also includes factor variables broken-out as dummy variables, which adds to the length of the model. In terms of our multiple regression formula in $\mbox{R}$, we've already cleaned and transformed our dataframe for the initial model, so the formula is much more concise: `Initial_days ~ ., data = init_mdl)`
+Though that equation is quite unwieldy, our initial model is designed to include the maximum amount of predictor features that can reasonably be included and potentially relate to the target feature. The model also includes factor variables broken-out as dummy variables, which adds to the length of the model. In terms of our multiple regression formula in $\mbox{R}$, we've already cleaned and transformed our dataframe for the initial model, so the formula is much more concise: 
+```
+Initial_days ~ .,
+               data = init_mdl)
+```
 
 </br>
 
@@ -353,12 +359,42 @@ Though that equation is quite unwieldy, our initial model is designed to include
 
 Our variable selection process includes the use of three stepwise elimination methods, namely backward, forward, and bidirectional stepwise elimination. The three selection methods are similar in approach, but each can result in substantively different models. Using all three will, therefore, allow us to analyze and evaluate the resulting models from each and choose the model that works best for our initial business question/hypothesis test: what relates to and/or influences a patient's initial length of hospitalization.
 
-Our feature selection criteria for each model reduction process will be the comparison of t-statistic p-value and whether or not it meets the threshold of .1 
+Our feature selection criteria for each model reduction process will be the comparison of t-statistic p-value and whether or not it meets the threshold of <0.1 for a given feature to be selected. Then, we will compare and evaluate the three resulting models using their corresponding Root Mean Square Error (RMSE), $R^2$, and F-Statistic. The model with the "best" combination of these measures (i.e. lowest RMSE, highest $R^2$, and lowest F-Statistic) will be selected as our reduced model.
 
 </br>
 
 ### D3: Reduced Multiple Regression Model
 <!-- Provide a reduced multiple regression model that includes both categorical and continuous variables. -->
+The reduced model is as follows:
+
+$$
+\begin{align}
+\hat{\text{Initial_days}}_i = \hat{\beta}_0
+    &+ \hat{\beta}_1 \text{Age}_i \\
+    &+ \hat{\beta}_2 \text{ReAdmisYes}_i \\
+    &+ \hat{\beta}_3 \text{Initial_adminObservation Admission}_i \\
+    &+ \hat{\beta}_4 \text{Initial_adminElective Admission}_i \\
+    &+ \hat{\beta}_5 \text{Complication_riskLow}_i \\
+    &+ \hat{\beta}_6 \text{Complication_riskHigh}_i \\
+    &+ \hat{\beta}_7 \text{ArthritisYes}_i \\
+    &+ \hat{\beta}_8 \text{AnxietyYes}_i \\
+    &+ \hat{\beta}_9 \text{Additional_charges}_i + \hat{\epsilon_i}
+\end{align}
+$$
+
+Our multiple regression formula in $\mbox{R}$, is: 
+```
+Initial_days ~ Age + 
+               ReAdmis + 
+               Initial_admin + 
+               Complication_risk + 
+               Arthritis + 
+               Anxiety + 
+               Additional_charges, 
+               data = init_mdl)
+```
+
+</br>
 
 ___
 
@@ -460,21 +496,42 @@ mdl_fwd <- ols_step_forward_p(mdl_fit, details = TRUE, penter = .1)
 mdl_both <- ols_step_both_p(mdl_fit, details = TRUE, pent = .1, prem = .1)
 ```
 
+
 ```{r}
-ols_step_backward_p(mdl_fit, details = TRUE)
+# Summary of the backward model
+summary(mdl_back$model)
 ```
 
-````{r}
-ols_step_both_p(mdl_fit, details = TRUE)
-```
-````{r}
-ols_step_best_subset(mdl_fit, details = TRUE)
+
+```{r}
+# Summary of the forward model
+summary(mdl_fwd$model)
 ```
 
-# ```{r}
-# plot(mdl_fit)
-# ```
 
+```{r}
+# Summary of the bidirectional model
+summary(mdl_both$model)
+```
+
+
+```{r}
+plot(mdl_back$model)
+```
+
+
+```{r}
+plot(mdl_fwd$model)
+```
+
+
+```{r}
+plot(mdl_both$model)
+```
+
+
+
+</br>
 
 ___
 
@@ -513,4 +570,5 @@ ___
 
 ### I: Sources
 
+Anova(mdl_both$model, singular.ok = TRUE)
 ___
