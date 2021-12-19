@@ -4,14 +4,10 @@
 %
 \documentclass[
 ]{article}
-\title{D208 - Predictive Modeling}
-\author{}
-\date{\vspace{-2.5em}}
-
 \usepackage{amsmath,amssymb}
 \usepackage{lmodern}
-\usepackage{iftex}
-\ifPDFTeX
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
@@ -112,9 +108,13 @@
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
-\ifLuaTeX
+\ifluatex
   \usepackage{selnolig}  % disable illegal ligatures
 \fi
+
+\title{D208 - Predictive Modeling}
+\author{}
+\date{\vspace{-2.5em}}
 
 \begin{document}
 \maketitle
@@ -306,6 +306,12 @@ skim function purpose-built for our needs here and print the output.
 \begin{longtable}[]{@{}ll@{}}
 \caption{Data summary}\tabularnewline
 \toprule
+& \\
+\midrule
+\endfirsthead
+\toprule
+& \\
+\midrule
 \endhead
 Name & init\_mdl \\
 Number of rows & 10000 \\
@@ -413,6 +419,12 @@ loading in the necessary libraries and reading-in the cleaned dataset.
 \begin{longtable}[]{@{}ll@{}}
 \caption{Data summary}\tabularnewline
 \toprule
+& \\
+\midrule
+\endfirsthead
+\toprule
+& \\
+\midrule
 \endhead
 Name & df \\
 Number of rows & 10000 \\
@@ -524,6 +536,12 @@ for our objective and keep the rest.
 \begin{longtable}[]{@{}ll@{}}
 \caption{Data summary}\tabularnewline
 \toprule
+& \\
+\midrule
+\endfirsthead
+\toprule
+& \\
+\midrule
 \endhead
 Name & Piped data \\
 Number of rows & 10000 \\
@@ -609,6 +627,12 @@ This will ensure that the model handles the variables as intended.
 \begin{longtable}[]{@{}ll@{}}
 \caption{Data summary}\tabularnewline
 \toprule
+& \\
+\midrule
+\endfirsthead
+\toprule
+& \\
+\midrule
 \endhead
 Name & init\_mdl \\
 Number of rows & 10000 \\
