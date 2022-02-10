@@ -17,7 +17,7 @@ output:
 
 ------------------------------------------------------------------------
 
-#### **Performance Assessment - Task 1: Multiple Regression for Predictive Modeling**
+#### **Performance Assessment - Task 2: Logistic Regression for Predictive Modeling**
 
 #### *Medical Readmission Data Set (Clean)*
 
@@ -31,23 +31,42 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(skimr))
 suppressMessages(library(Hmisc))
 suppressMessages(library(broom))
-suppressMessages(library(olsrr))
 suppressMessages(library(car))
+suppressMessages(library(MASS))
+suppressMessages(library(InformationValue))
 
 df <- read.csv("./data/medical_clean.csv")
 
 init_mdl <- df %>%
-  select(Initial_days,
+  dplyr::select(Initial_days,
          Area,
          Children:Services,
          Additional_charges)
 
-mdl_fit <- lm(Initial_days ~ .,
-              data = init_mdl)
+# Reformat all chr variables as fct
+init_mdl[sapply(init_mdl,
+                is.character)] <- lapply(init_mdl[sapply(init_mdl,
+                                                         is.character)],
+                                         as.factor)
 
-mdl_back <- ols_step_backward_p(mdl_fit, prem = .1)
-mdl_fwd <- ols_step_forward_p(mdl_fit, penter = .1)
-mdl_both <- ols_step_both_p(mdl_fit, pent = .1, prem = .1)
+# Initial/upper logit model
+logitfull <- glm(ReAdmis ~ .,
+                data = init_mdl,
+                family = binomial)
+
+# Lower logit model
+logitlow <- glm(ReAdmis ~ 1,
+                data = init_mdl,
+                family = binomial)
+
+# Initiate stepfwd model
+stepfwd <- suppressWarnings(stepAIC(logitlow,
+                                    scope = list(lower = logitlow,
+                                                 upper = logitfull)))
+
+# Initiate stepbck model
+stepbck <- suppressWarnings(stepAIC(logitfull,
+                                    direction = "backward"))
 ```
 
 ## Part I
@@ -56,21 +75,21 @@ ___
 
 The central research question addressed by this analysis is to determine:
 
->What variables from the medical dataset influence a patient's initial total days spent hospitalized (`Initial_days`)? 
+>What variables from the medical dataset influence a patient's probability of being readmitted to the hospital following an initial admission (`ReAdmis`)? 
 
 In terms of hypothesis testing, our null hypothesis ($H_0$) is:
 
->No combination of variables included in the medical dataset influence initial length of stay (`Initial_days`) in any statistically significant way.
+>One or more variables included in the medical dataset influence readmission probability (`ReAdmis`) in any statistically significant way.
 
 Additionally, our alternate hypothesis ($H_1$) is:
 
->Some combination of variables included in the medical dataset influence initial length of stay (`Initial_days`) in a statistically significant way.
+>No variables included in the medical dataset influence readmission probability (`ReAdmis`) in a statistically significant way.
 
 </br>
 
 ### A2: Objectives and Goals
 
-The primary goal of the following analysis is to determine what variables, if any, contribute positively to a patient's initial number of days hospitalized (`Initial_days`). This will be assessed using the $\mbox{R}$ programming language and using the technique of multiple linear regression to identify causal relationships between independent variables and the target variable.
+The primary goal of the following analysis is to discover what predictors potentially increase the likelihood a patient will be readmitted after initial hospitalization (`ReAdmis`). This will be assessed using the $\mbox{R}$ programming language using the technique of multiple logistic regression to identify causal relationships between one or more predictor variables and a binary target variable.
 
 ___
 </br>
@@ -80,24 +99,25 @@ ___
 ___
 ### B1: Summary of Assumptions
 
-The following are basic assumptions of multiple linear regression:
+The following are basic assumptions of logistic regression:
 
--   The assumption of a linear relationship between the explanatory variables and the target variable
--   The assumption that residual values are normally distributed
--   The assumption of non-multicollinearity of explanatory variables
--   The assumption that residual values are homoscedastic
+-   The assumption of binary predictor outcome (between 0 and 1)
+-   The assumption of linearity of continuous predictor variables
+-   The assumption of non-multicollinearity of predictor variables
+-   The assumption of no significantly influential outliers in dataset
 
 </br>
 
+
 ### B2: Tool Benefits
 
-The programming language of choice for this analysis, as previously mentioned, will be the $\mbox{R}$ programming language. Previously, this author has used Python to perform cleaning, transformation, and analysis. Python has been more than up to the task. However, $\mbox{R}$ happens to handle the process of regression analysis and model selection exceptionally well and thus became the self-evident choice for multiple regression analysis. In particular, the built-in functions of the base $\mbox{R}$ language, as used to fit models, are incredibly simple to navigate and equally as easy to demonstrate. Additionally, the reduction process using the `ols_step_backward_p()` function, as another example, made the task of choosing which programming language to use for this project even easier. It is with good reason that $\mbox{R}$ has such a stellar reputation for handling regression models.
+The programming language of choice for this analysis, as previously mentioned, will be the $\mbox{R}$ programming language. Previously, this author has used Python to perform cleaning, transformation, and analysis. Python has been more than up to the task. However, $\mbox{R}$ happens to handle the process of regression analysis and model selection exceptionally well and thus became the self-evident choice for multiple logistic regression analysis. In particular, the built-in functions of the base $\mbox{R}$ language, as used to fit models, are incredibly simple to navigate and equally as easy to demonstrate. Additionally, the reduction process using the `stepAIC()` function, as another example, made the task of choosing which programming language to use for this project even easier. It is with good reason that $\mbox{R}$ has such a stellar reputation for handling regression models.
 
 </br>
 
 ### B3: Appropriate Technique
 
-Multiple regression is an appropriate technique to use to accomplish our goal of finding which variables contribute to a longer initial length of stay (`Initial_days`) for several reasons. Firstly, the dataset we will analyze contains 50 variables in total, each of disparate significance and utility. While some variables do not require much thought prior to elimination, others are not quite as straightforward. Therefore, running them through a multiple regression model prior to discarding them is an appropriate course of action. Additionally, multiple regression will allow us to see the significance of each variable's discrete contribution to the target variable as well as the interaction between explanatory variables themselves. Overall, regarding our objective, multiple regression is more than up to the task and will adequately suit our objectives.
+Multiple logistic regression is an appropriate technique to use to accomplish our goal of finding which variables contribute to a potentially higher probability of readmission for a given patient (`ReAdmis`) for several reasons. Firstly, the dataset we will analyze contains 50 variables in total, each of disparate significance and utility. While some variables do not require much thought prior to elimination, others are not quite as straightforward. Therefore, running them through a multiple logistic regression model prior to discarding them is an appropriate course of action. Additionally, multiple regression will allow us to see the significance of each variable's discrete contribution to the target variable as well as the interaction between explanatory variables themselves. Overall, regarding our objective, multiple logistic regression is more than up to the task and will adequately suit our objectives.
 
 ___
 </br>
@@ -109,9 +129,9 @@ ___
 
 ### C1: Data Goals
 
-The process we will need to take to prepare the data for model selection is relatively minor, given that the raw dataset used in this project has already been cleaned in a prior project (see project D206 - Data Cleaning). Using the pre-cleaned dataset, we will first partition the data to include only those variables we intend to feed into our initial model. Because the model selection process we will use is backward-oriented, this initial model will include all features that could possibly have a relationship to the target variable of initial length of hospitalization (`Initial_days`). This will include a mix of numeric and categorical variables. 
+The process we will need to complete in order to prepare the data for model selection is relatively minor, given that the raw dataset used in this project has already been cleaned in a prior project (see project D206 - Data Cleaning). Using the pre-cleaned dataset, we will first partition the data to include only those variables we intend to feed into our initial model. Because the first model selection process we will use is backward-oriented, this initial model will include all features that could possibly have a relationship to the binary target variable of readmission (`ReAdmis`). This will include a mix of numeric and categorical variables. 
 
-Next, we will need to ensure that the data type of each variable is appropriate for that kind of feature. For example, we will determine which categorical variables are nominal and which would benefit from ordinal encoding. Once the dataset for the initial model has been partitioned and transformed (or converted to the right type, at least), we will look over the dataset to ensure that we have not created any problems in the process such as silently introducing null values.
+Next, we will need to ensure that the data type of each variable is appropriate for that kind of feature. For example, we will determine which variables are categorical and need to be coded as a factor in $\mbox{R}$. Once the dataset for the initial model has been partitioned and transformed (or converted to the right type, at least), we will look over the dataset to ensure that we have not created any problems in the process such as silently introducing null values.
 
 </br>
 
@@ -156,13 +176,27 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(skimr))
 suppressMessages(library(Hmisc))
 suppressMessages(library(broom))
-suppressMessages(library(olsrr))
 suppressMessages(library(car))
-```
+suppressMessages(library(MASS))
+suppressMessages(library(InformationValue))
 
-```{r}
 # Read dataset in
 df <- read.csv("./data/medical_clean.csv")
+
+# Create custom skim if not already done
+my_skim <- skim_with(
+  base = sfl(),
+  numeric = sfl(Mean = mean,
+                Median = median,
+                StDev = sd,
+                Min = min,
+                Q25 = ~ quantile(., probs = .25),
+                Q75 = ~ quantile(., probs = .75),
+                Max = max),
+  factor = sfl(Unique_Values = n_unique,
+               Value_Counts = top_counts),
+  append = FALSE
+)
 
 # Start with a quick skim of the data for orientation and future reference
 my_skim(df)
@@ -174,12 +208,12 @@ Immediately we will drop variables that, at this time, are unnecessary for our o
 # Partition dataset to include only features to be initially included in model
 # Initial_days is reordered to first position for ease of reference
 init_mdl <- df %>%
-  select(Initial_days,
-         Area,
-         Children:Services,
-         Additional_charges)
+  dplyr::select(Initial_days,
+                Area,
+                Children:Services,
+                Additional_charges)
 
-# View new dataframe and assess dtypes
+# View new dataframe and assess data types
 init_mdl %>%
   my_skim()
 ```
@@ -197,38 +231,7 @@ init_mdl[sapply(init_mdl,
 my_skim(init_mdl)
 ```
 
-This `skim()` view of the dataframe is quite useful. It shows the dataframes is comprised of two data types: factor and numeric. Thus, it appears we were successful in converting our columns to factors. The majority of the variables included are either dichotomous or otherwise nominal categorical variables. We do, however, have a couple of variables that likely would benefit from changing the reference category. The previous code was convenient for converting a relatively large group of variables to factors all at once, but does not consider levels. Thus, we will take to changing the reference level for two variables (Initial_admin and Complication_risk) below. First, let's just verify our assumptions by accessing these variables' levels to determine which category comes first. If our model is attempting to discover what features contribute to a longer initial length of hospitalization, it would be helpful to have the least likely contributor be the reference category, such that the coefficients are positively oriented. Based on measures of central tendency for these two variables, Emergency Admission for `Initial_admin` and Medium `Complication_risk` have the lowest combination of median, mean and standard deviation and will be reset as the reference category for their respective variable.
-
-```{r}
-# Access levels() for each variable
-levels(init_mdl$Initial_admin)
-levels(init_mdl$Complication_risk)
-```
-
-OK, our assumptions about the order were valid. Now, let's fix them.
-
-```{r}
-# Re-level ordinal categorical variables for Initial_admin
-init_mdl$Initial_admin <- factor(init_mdl$Initial_admin,
-                                 levels = c("Emergency Admission",
-                                            "Observation Admission",
-                                            "Elective Admission"))
-# Re-level ordinal categorical variables for Complication_risk
-init_mdl$Complication_risk <- factor(init_mdl$Complication_risk,
-                                 levels = c("Medium",
-                                            "Low",
-                                            "High"))
-```
-
-Finally, we will check again to make sure the above worked as intended.
-
-```{r}
-# Access levels() for each variable
-levels(init_mdl$Initial_admin)
-levels(init_mdl$Complication_risk)
-```
-
-Now that we have validated our conversion process and the composition of our data, we can now proceed with the model selection process. 
+This `skim()` view of the dataframe is quite useful. It shows the dataframe is comprised of two data types: factor and numeric. Thus, it appears we were successful in converting our columns to factors. The majority of the variables included are either dichotomous or otherwise nominal categorical variables. Now that we have completed our conversion process and validated the composition of our data, we may now proceed with the model selection process.
 
 </br>
 
@@ -248,7 +251,7 @@ hist(init_mdl %>%
 ```{r}
 # Partition dichotomous Yes/No variables out for plot
 dichotomous_vars <- init_mdl %>% 
-  select(where(~n_distinct(.) == 2))
+  dplyr::select(where(~n_distinct(.) == 2))
 
 # Show bar charts of all Yes/No variables
 dichotomous_vars %>%
@@ -263,7 +266,7 @@ dichotomous_vars %>%
 # Partition non-dichotomous categorical variables
 cat_vars <- init_mdl %>% 
   select_if(is.factor) %>% 
-  select(where(~n_distinct(.) != 2))
+  dplyr::select(where(~n_distinct(.) != 2))
 
 # Rename levels to shorter versions to fit plots
 levels(cat_vars$Marital) <- c("Divorced",
@@ -299,19 +302,23 @@ Now we will get a different view of the data using scatter and box plots to dive
 num_vars <- init_mdl %>% 
   select_if(is.numeric)
 
-# Show scatterplot matrix of numeric variables
-pairs(num_vars)
+# Show scatter plot matrix of numeric variables
+pairs(num_vars,
+      col=init_mdl$ReAdmis)
 ```
 
+Our target variable (`ReAdmis`) can be identified as the red in the above visualization. 
+
+
 ```{r}
-# Boxplots of our target variable against some categorical variables
+# Boxplots of our ReAdmis target variable against some numerical variables
 par(mfrow = c(2,3))
-boxplot(Initial_days ~ Complication_risk, data = init_mdl)
-boxplot(Initial_days ~ Gender, data = init_mdl)
-boxplot(Initial_days ~ Overweight, data = init_mdl)
-boxplot(Initial_days ~ Anxiety, data = init_mdl)
 boxplot(Initial_days ~ ReAdmis, data = init_mdl)
-boxplot(Initial_days ~ Initial_admin, data = init_mdl)
+boxplot(Children ~ ReAdmis, data = init_mdl)
+boxplot(Age ~ ReAdmis, data = init_mdl)
+boxplot(VitD_levels ~ ReAdmis, data = init_mdl)
+boxplot(Income ~ ReAdmis, data = init_mdl)
+boxplot(Doc_visits ~ ReAdmis, data = init_mdl)
 ```
 
 </br>
@@ -334,97 +341,114 @@ ___
 
 ### D1: Initial Model
 
-The initial model will consist of essentially any potentially relevant independent variables. The initial model will then be evaluated and reduced using a combination of backward and stepwise selection. Considering the linear regression equation is as follows:
+The initial model will consist of essentially any potentially relevant independent variables. The initial model will then be evaluated and reduced using forward and backward stepwise selection. Considering the logistic regression equation is as follows:
 
-$\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i + \hat{\beta}_2 x_i + \hat{\epsilon}_i$
+$$
+ln \left( \frac{ \hat{ p(x) } } {\left( 1 - \hat{ p(x) } \right) } \right) = \beta_0 + \beta_1x_i + \beta_2x_2 + ... + \beta_nx_n + e_i
+$$
 
 and that the number of coefficients is equal to the number of independent variables, our initial model looks something like this:
 
 $$
 \begin{align}
-\hat{\text{Initial_days}}_i = \hat{\beta}_0
-    &+ \hat{\beta}_1 \text{AreaSuburban}_i \\
-    &+ \hat{\beta}_2 \text{AreaUrban}_i \\
-    &+ \hat{\beta}_3 \text{Children}_i \\
-    &+ \hat{\beta}_4 \text{Age}_i \\
-    &+ \hat{\beta}_5 \text{Income}_i \\
-    &+ \hat{\beta}_6 \text{MaritalMarried}_i \\
-    &+ \hat{\beta}_7 \text{MaritalNever Married}_i \\
-    &+ \hat{\beta}_8 \text{MaritalSeparated}_i \\
-    &+ \hat{\beta}_9 \text{MaritalWidowed}_i \\
-    &+ \hat{\beta}_{10} \text{GenderMale}_i \\
-    &+ \hat{\beta}_{11} \text{GenderNonbinary}_i \\
-    &+ \hat{\beta}_{12} \text{ReAdmisYes}_i \\
-    &+ \hat{\beta}_{13} \text{VitD_levels}_i \\
-    &+ \hat{\beta}_{14} \text{Doc_visits}_i \\
-    &+ \hat{\beta}_{15} \text{Full_meals_eaten}_i \\
-    &+ \hat{\beta}_{16} \text{Soft_drinkYes}_i \\
-    &+ \hat{\beta}_{17} \text{Initial_adminObservation Admission}_i \\
-    &+ \hat{\beta}_{18} \text{Initial_adminElective Admission}_i \\
-    &+ \hat{\beta}_{19} \text{HighBloodYes}_i \\
-    &+ \hat{\beta}_{20} \text{StrokeYes}_i \\
-    &+ \hat{\beta}_{21} \text{Complication_riskLow}_i \\
-    &+ \hat{\beta}_{22} \text{Complication_riskHigh}_i \\
-    &+ \hat{\beta}_{23} \text{OverweightYes}_i \\
-    &+ \hat{\beta}_{24} \text{ArthritisYes}_i \\
-    &+ \hat{\beta}_{25} \text{DiabetesYes}_i \\
-    &+ \hat{\beta}_{26} \text{BackPainYes}_i \\
-    &+ \hat{\beta}_{27} \text{AnxietyYes}_i \\
-    &+ \hat{\beta}_{28} \text{Allergic_rhinitisYes}_i \\
-    &+ \hat{\beta}_{29} \text{Reflux_esophagitisYes}_i \\
-    &+ \hat{\beta}_{30} \text{AsthmaYes}_i \\
-    &+ \hat{\beta}_{31} \text{ServicesCT Scan}_i \\
-    &+ \hat{\beta}_{32} \text{ServicesIntravenous}_i \\
-    &+ \hat{\beta}_{33} \text{ServicesMRI}_i \\ 
-    &+ \hat{\beta}_{34} \text{Additional_charges}_i + \hat{\epsilon_i}
+ln \left( \frac{ \hat{ p(ReAdmis) } } {\left( 1 - \hat{ p(ReAdmis) } \right) } \right) = \hat{\beta}_0 \\
+    &+ \hat{\beta}_1 \text{AreaSuburban} \\
+    &+ \hat{\beta}_2 \text{AreaUrban} \\
+    &+ \hat{\beta}_3 \text{Children} \\
+    &+ \hat{\beta}_4 \text{Age} \\
+    &+ \hat{\beta}_5 \text{Income} \\
+    &+ \hat{\beta}_6 \text{MaritalMarried} \\
+    &+ \hat{\beta}_7 \text{MaritalNever Married} \\
+    &+ \hat{\beta}_8 \text{MaritalSeparated} \\
+    &+ \hat{\beta}_9 \text{MaritalWidowed} \\
+    &+ \hat{\beta}_{10} \text{GenderMale} \\
+    &+ \hat{\beta}_{11} \text{GenderNonbinary} \\
+    &+ \hat{\beta}_{12} \text{Initial_days} \\
+    &+ \hat{\beta}_{13} \text{VitD_levels} \\
+    &+ \hat{\beta}_{14} \text{Doc_visits} \\
+    &+ \hat{\beta}_{15} \text{Full_meals_eaten} \\
+    &+ \hat{\beta}_{16} \text{Soft_drinkYes} \\
+    &+ \hat{\beta}_{17} \text{Initial_adminObservation Admission} \\
+    &+ \hat{\beta}_{18} \text{Initial_adminElective Admission} \\
+    &+ \hat{\beta}_{19} \text{HighBloodYes} \\
+    &+ \hat{\beta}_{20} \text{StrokeYes} \\
+    &+ \hat{\beta}_{21} \text{Complication_riskLow} \\
+    &+ \hat{\beta}_{22} \text{Complication_riskHigh} \\
+    &+ \hat{\beta}_{23} \text{OverweightYes} \\
+    &+ \hat{\beta}_{24} \text{ArthritisYes} \\
+    &+ \hat{\beta}_{25} \text{DiabetesYes} \\
+    &+ \hat{\beta}_{26} \text{BackPainYes} \\
+    &+ \hat{\beta}_{27} \text{AnxietyYes} \\
+    &+ \hat{\beta}_{28} \text{Allergic_rhinitisYes} \\
+    &+ \hat{\beta}_{29} \text{Reflux_esophagitisYes} \\
+    &+ \hat{\beta}_{30} \text{AsthmaYes} \\
+    &+ \hat{\beta}_{31} \text{ServicesCT Scan} \\
+    &+ \hat{\beta}_{32} \text{ServicesIntravenous} \\
+    &+ \hat{\beta}_{33} \text{ServicesMRI} \\ 
+    &+ \hat{\beta}_{34} \text{Additional_charges} + \hat{\epsilon}
 \end{align}
 $$
 
-Though that equation is quite unwieldy, our initial model is designed to include the maximum amount of predictor features that can reasonably be included and potentially relate to the target feature. The model also includes factor variables broken-out as dummy variables, which adds to the length of the model. In terms of our multiple regression formula in $\mbox{R}$, we've already cleaned and transformed our dataframe for the initial model, so the formula is much more concise: 
+Though that equation is quite unwieldy, our initial model is designed to include the maximum amount of predictor features that can reasonably be included and potentially relate to the target feature. The model also includes factor variables broken-out as dummy variables, which adds to the length of the model. In terms of our multiple logistic regression formula in $\mbox{R}$, we've already cleaned and transformed our dataframe for the initial model, so the formula is much more concise: 
 ```
-Initial_days ~ .,
-               data = init_mdl)
+ReAdmis ~ .,
+  data = init_mdl)
 ```
 
 </br>
 
 ### D2: Justification of Model Reduction
 
-Our variable selection process includes the use of three stepwise elimination methods, namely backward, forward, and bidirectional stepwise elimination. The three selection methods are similar in approach, but each can result in substantively different models. Using all three will, therefore, allow us to analyze and evaluate the resulting models from each and choose the model that works best for our initial business question/hypothesis test: what relates to and/or influences a patient's initial length of hospitalization.
+Our variable selection process includes the use of stepwise elimination methods, forward and backward, to systematically reduce each model one variable at a time and finally arriving at an optimal group of variables. The stepwise selection methods are similar in approach, but each can result in substantively different models. Using both forward and backward, therefore, allow us to analyze and evaluate the resulting models from each and choose the model that works best for our initial business question/hypothesis test: what relates to and/or influences a patient's initial length of hospitalization.
 
-Our feature selection criteria for each model reduction process will be the comparison of t-statistic p-value and whether or not it meets the threshold of <0.1 for a given feature to be selected. Then, we will compare and evaluate the three resulting models using their corresponding Root Mean Square Error (RMSE), $R^2$, and F-statistic. The model with the "best" combination of these measures (i.e. lowest RMSE, highest $R^2$, and lowest F-statistic) will be selected as our reduced model.
+Our feature selection criteria for each model reduction process will be the comparison of z-statistic p-value and AIC for individual predictors. Each step will either include or exclude the most or least useful variable respectively until no further benefit is observed. Then, the resulting reduced models will be compared against each other using the $AIC$ criteria, which is particularly useful for our logistic models, as well as examining the effective interpretation of coefficients. The model with the "best" combination of these measures (i.e. lowest $AIC$ and best explanation of coefficients) will ultimately be selected as our reduced model.
 
 </br>
 
-### D3: Reduced Multiple Regression Model
+### D3: Reduced Logistic Regression Model
 
 The reduced model is as follows:
 
 $$
 \begin{align}
-\hat{\text{Initial_days}}_i = \hat{\beta}_0
-    &+ \hat{\beta}_1 \text{Age}_i \\
-    &+ \hat{\beta}_2 \text{ReAdmisYes}_i \\
-    &+ \hat{\beta}_3 \text{Initial_adminObservation Admission}_i \\
-    &+ \hat{\beta}_4 \text{Initial_adminElective Admission}_i \\
-    &+ \hat{\beta}_5 \text{Complication_riskLow}_i \\
-    &+ \hat{\beta}_6 \text{Complication_riskHigh}_i \\
-    &+ \hat{\beta}_7 \text{ArthritisYes}_i \\
-    &+ \hat{\beta}_8 \text{AnxietyYes}_i \\
-    &+ \hat{\beta}_9 \text{Additional_charges}_i + \hat{\epsilon_i}
+ln \left( \frac{ \hat{ p(ReAdmis) } } {\left( 1 - \hat{ p(ReAdmis) } \right) } \right) = \hat{\beta}_0 \\
+    &+ \hat{\beta}_1 \text{Initial_days} \\
+    &+ \hat{\beta}_2 \text{Initial_adminEmergency Admission} \\
+    &+ \hat{\beta}_3 \text{Initial_adminObservation Admission} \\
+    &+ \hat{\beta}_4 \text{ServicesCT Scan} \\
+    &+ \hat{\beta}_5 \text{ServicesIntravenous} \\
+    &+ \hat{\beta}_6 \text{ServicesMRI} \\
+    &+ \hat{\beta}_7 \text{StrokeYes} \\
+    &+ \hat{\beta}_8 \text{Complication_riskLow} \\
+    &+ \hat{\beta}_9 \text{Complication_riskMedium} \\
+    &+ \hat{\beta}_{10} \text{ArthritisYes} \\
+    &+ \hat{\beta}_{11} \text{AsthmaYes} \\
+    &+ \hat{\beta}_{12} \text{AnxietyYes} \\
+    &+ \hat{\beta}_{13} \text{HighBloodYes} \\
+    &+ \hat{\beta}_{14} \text{DiabetesYes} \\
+    &+ \hat{\beta}_{15} \text{Children} \\
+    &+ \hat{\beta}_{16} \text{Reflux_esophagitisYes} \\
+    &+ \hat{\beta}_{17} \text{Allergic_rhinitisYes}  + \hat{\epsilon_i}\\
 \end{align}
 $$
 
+
 Our multiple regression formula in $\mbox{R}$, is: 
 ```
-Initial_days ~ Age + 
-               ReAdmis + 
-               Initial_admin + 
-               Complication_risk + 
-               Arthritis + 
-               Anxiety + 
-               Additional_charges, 
-               data = init_mdl)
+ReAdmis ~ Initial_days +
+          Children +
+          Initial_admin +
+          HighBlood +
+          Stroke +
+          Complication_risk +
+          Arthritis +
+          Diabetes +
+          Anxiety +
+          Allergic_rhinitis +
+          Reflux_esophagitis +
+          Asthma +
+          Services,
+          data = init_mdl)
 ```
 
 </br>
@@ -440,63 +464,144 @@ ___
 
 ### E1: Model Comparison
 
-As mentioned above, the process by which the multiple regression model was reduced and selected was using backward, forward, and bidirectional stepwise selection. Using the `olsrr` package, we were able to run the selection process as an iterative function and analyze the results. Additionally, each step in the process is tracked and all decisions made by the algorithm are recorded. The initial model was a completely overfit model with very little useful information to begin with. The backward elimination process analyzed the initial model, compared the t-statistic p-values for all features, and removed the feature with the least statistically significant contribution to the model at each step. This resulted in 20 total steps eliminating variables until no variable in the model had a p-value >0.1. 
+As mentioned above, the process by which the multiple regression model was reduced and selected was by using forward and backward stepwise selection. Using the `MASS` package, we were able to run the selection process as an iterative function and analyze the results. The initial model was overfit with very little use to begin with. 
 
-The forward selection process used the same evaluation criterion (p-value <0.1). The process was simply the reverse of backward elimination. Analysis of the initial model's features resulted in the identification of the most statistically significant variable, adding it to the model. This step was repeated, each time adding the next-most statistically significant variable until none of the remaining variables met the p-value threshold of <0.1.
+The forward selection process started by analyzing an essentially empty model, measured the impact on the z-statistic p-values and individual contribution to $AIC$ values for all features included in the full, initial model, and added the single feature with the most statistically significant contribution to the model at each step. This process was repeated until no further benefit was observed by adding an additional feature. This resulted in 13 statistically significant features included in the final model. 
 
-Finally, the bidirectional method was a combination of both forward and backward stepwise procedures. The algorithm starts with forward selection and at each step evaluates the most significant impact to the model in whether or not to select or eliminate a variable until the criteria (again, p-value <0.1) is met. 
+The backward elimination process used the same evaluation criterion (z-statistic p-value and individual $AIC$ contribution). The process is simply the reverse of forward elimination. Analysis of the initial model's features resulted in the identification of the least statistically significant variable which was subsequently removed from the model. This step was repeated, each time removing the next-least statistically significant variable until no further benefit was observed. Backward elimination likewise concluded with 13 statistically significant features included in the optimal model.
 
-The final output of the three models includes the RMSE, adjusted $R^2$, and F-statistic. The models were then compared by these metrics. There is very little different between models. In fact, the forward and bidirectional methods resulted in the same model, so the evaluation was essentially between the backward and forward methods. As the backward elimination method produced a model with a lower F-statistic and the RMSE and adjusted $R^2$ were very similar, the backward elimination model was chosen as the final reduced model. 
+The final output of the two models includes, perhaps most notably, their $AIC$. The models were then compared by this metric and the logical explanation of coefficients. The optimal model for both selection processes resulted in identical feature selection. Typically, should forward and backward selection resulted in different models, the model with the best combination of the above ($AIC$ and logical/useful coefficients) would have been selected. It's important to note that an $AIC$ delta of greater than 2.0 would be sufficient to reject as inferior.
 
-Consider the following sets of plots for both models:
-
-```{r}
-# Plot residual analysis of backward model
-plot(mdl_back$model)
-```
-
-```{r}
-# Plot residual analysis of forward model
-plot(mdl_fwd$model)
-```
+>https://cals.arizona.edu/classes/wfsc578/Symonds%20and%20Moussali%202011.%20A%20brief%20guide%20to%20model%20selection.pdf
+>Burnham KP, Anderson DR (2002) Model selection and multimodelinference, 2nd edn. Springer, New York
 
 
+</br>
 </br>
 
 ### E2: Output and Calculations
 
-Consider the following summary outputs for both models including the residual standard error, adjusted $R^2$, and F-statistic.
-
-```{r}
-# Summary of the backward model
-summary(mdl_back$model)
-```
-
+Consider the following summary outputs for both models including the Confusion Matrix and misclassification error rate of both.
 
 ```{r}
 # Summary of the forward model
-summary(mdl_fwd$model)
+summary(stepfwd)
 ```
+
+
+```{r}
+# Create predicted values based on stepfwd
+predicted <- predict(stepfwd,
+                     init_mdl,
+                     type = "response")
+
+# Convert target var (ReAdmis) to binary 1/0 vals
+predmdl <- init_mdl
+predmdl$ReAdmis <- ifelse(predmdl$ReAdmis == "Yes",
+                          1,
+                          0)
+
+# Compute optimal prob cutoff score
+optimal <- optimalCutoff(predmdl$ReAdmis,
+                         predicted)[1]
+
+# Create confusion matrix of actuals and predicted values
+as.matrix(confusionMatrix(predmdl$ReAdmis,
+                predicted))
+
+# Declare misclassification error
+misClassError(predmdl$ReAdmis,
+              predicted,
+              threshold=optimal)
+```
+
+
+
+
+```{r}
+# Summary of the backward elimination model
+summary(stepbck)
+```
+
+```{r}
+# Create predicted values based on stepbck
+predicted <- predict(stepbck,
+                     init_mdl,
+                     type = "response")
+
+# Convert target var (ReAdmis) to binary 1/0 vals
+predmdl <- init_mdl
+predmdl$ReAdmis <- ifelse(predmdl$ReAdmis == "Yes",
+                          1,
+                          0)
+
+# Compute optimal prob cutoff score
+optimal <- optimalCutoff(predmdl$ReAdmis,
+                         predicted)[1]
+
+# Create confusion matrix of actuals and predicted values
+as.matrix(confusionMatrix(predmdl$ReAdmis,
+                predicted))
+
+# Declare misclassification error
+misClassError(predmdl$ReAdmis,
+              predicted,
+              threshold=optimal)
+```
+
 
 ### Predictions using reduced model:
 
 ```{r}
 # Create a dataframe of 20 predictor vectors
-p_Age <- seq.int(18, 95, by = 4)
-p_ReAdmis <- rep_len(levels(init_mdl$ReAdmis), length.out = 20)
-p_Initial_admin <- rep_len(levels(init_mdl$Initial_admin), length.out = 20)
-p_Complication_risk <- rep_len(levels(init_mdl$Complication_risk), length.out = 20)
-p_Arthritis <- rep_len(levels(init_mdl$Arthritis), length.out = 20)
-p_Anxiety <- rep_len(levels(init_mdl$Anxiety), length.out = 20)
-p_Additional_charges <- seq(min(init_mdl$Additional_charges), max(init_mdl$Additional_charges), length.out = 20)
-p_mdl <- data.frame(Age = p_Age,
-                     ReAdmis = p_ReAdmis,
-                     Initial_admin = p_Initial_admin,
-                     Complication_risk = p_Complication_risk,
-                     Arthritis = p_Arthritis,
-                     Anxiety = p_Anxiety,
-                     Additional_charges = p_Additional_charges)
-p_mdl$p_initial_days <- predict(mdl_back$model, new = p_mdl)
+p_Initial_days <- seq(min(init_mdl$Initial_days),
+                      max(init_mdl$Initial_days),
+                      by = (max(init_mdl$Initial_days) - min(init_mdl$Initial_days)) / 19)
+p_Initial_admin <- rep_len(levels(init_mdl$Initial_admin),
+                           length.out = 20)
+p_Services <- rep_len(levels(init_mdl$Services),
+                           length.out = 20)
+p_Stroke <- rep_len(levels(init_mdl$Stroke),
+                       length.out = 20)
+p_Complication_risk <- rep_len(levels(init_mdl$Complication_risk),
+                               length.out = 20)
+p_Arthritis <- rep_len(levels(init_mdl$Arthritis),
+                       length.out = 20)
+p_Asthma <- rep_len(levels(init_mdl$Asthma),
+                       length.out = 20)
+p_Anxiety <- rep_len(levels(init_mdl$Anxiety),
+                     length.out = 20)
+p_HighBlood <- rep_len(levels(init_mdl$HighBlood),
+                     length.out = 20)
+p_Diabetes <- rep_len(levels(init_mdl$Diabetes),
+                     length.out = 20)
+p_Children <- sample(init_mdl$Children,
+                     20,
+                     replace = TRUE)
+p_Reflux_esophagitis <- rep_len(levels(init_mdl$Reflux_esophagitis),
+                     length.out = 20)
+p_Allergic_rhinitis <- rep_len(levels(init_mdl$Allergic_rhinitis),
+                     length.out = 20)
+
+p_mdl <- data.frame(Initial_days = p_Initial_days,
+                    Initial_admin = p_Initial_admin,
+                    Services = p_Services,
+                    Stroke = p_Stroke,
+                    Complication_risk = p_Complication_risk,
+                    Arthritis = p_Arthritis,
+                    Asthma = p_Asthma,
+                    Anxiety = p_Anxiety,
+                    HighBlood = p_HighBlood,
+                    Diabetes = p_Diabetes,
+                    Children = p_Children,
+                    Reflux_esophagitis = p_Reflux_esophagitis,
+                    Allergic_rhinitis = p_Allergic_rhinitis)
+
+# Add predictions column p_ReAdmis
+p_mdl$p_ReAdmis <- predict(stepfwd,
+                           new = p_mdl,
+                           type = "response")
+
 p_mdl
 ```
 
@@ -504,56 +609,71 @@ p_mdl
 
 ### E3: Code
 
-```{r}
-# Assign full initial model (using all previously selected vars) to mdl_fit
-mdl_fit <- lm(Initial_days ~ .,
-              data = init_mdl)
-# View summary of initial model
-summary(mdl_fit)
-```
 
 ```{r}
-# Fit backward elimination stepwise regression model to mdl_back 
-mdl_back <- ols_step_backward_p(mdl_fit, details = TRUE, prem = .1)
+# Initial/upper logit model
+logitfull <- glm(ReAdmis ~ .,
+                data = init_mdl,
+                family = binomial)
 
-# Fit forward selection stepwise regression model to mdl_fwd 
-mdl_fwd <- ols_step_forward_p(mdl_fit, details = TRUE, penter = .1)
+# Lower logit model
+logitlow <- glm(ReAdmis ~ 1,
+                data = init_mdl,
+                family = binomial)
 
-# Fit bidirectional stepwise regression model to mdl_both 
-mdl_both <- ols_step_both_p(mdl_fit, details = TRUE, pent = .1, prem = .1)
 ```
 
 
+
 ```{r}
-# Summary of the backward model
-summary(mdl_back$model)
+# Forward stepwise model selection (suppress perfect separation warnings)
+stepfwd <- suppressWarnings(stepAIC(logitlow,
+                                    scope = list(lower = logitlow,
+                                                 upper = logitfull)))
 ```
 
 
+
 ```{r}
-# Summary of the forward model
-summary(mdl_fwd$model)
+# Backward stepwise model selection (suppress perfect separation warnings)
+stepbck <- suppressWarnings(stepAIC(logitfull,
+                                    direction = "backward"))
 ```
 
 
+
 ```{r}
-# Summary of the bidirectional model
-summary(mdl_both$model)
+# Show forward-reduced model summary
+summary(stepfwd)
 ```
 
 
+
+
 ```{r}
-plot(mdl_back$model)
+# Show backward-reduced model summary
+summary(stepbck)
 ```
 
 
-```{r}
-plot(mdl_fwd$model)
-```
-
 
 ```{r}
-plot(mdl_both$model)
+# Reduced Model (stepbck)
+reduced_mdl <- glm(ReAdmis ~ Initial_days +
+                     Initial_admin +
+                     Services +
+                     Stroke +
+                     Complication_risk +
+                     Arthritis +
+                     Asthma +
+                     Anxiety +
+                     HighBlood +
+                     Diabetes +
+                     Children +
+                     Reflux_esophagitis +
+                     Allergic_rhinitis,
+                data = init_mdl,
+                family = binomial)
 ```
 
 
@@ -569,55 +689,79 @@ ___
 ___
 
 ### F1: Results
-<!-- Discuss the results of your data analysis, including the following elements: -->
-<!-- •  a regression equation for the reduced model -->
-Multiple linear regression analyses were performed to interrogate the relationship between the response variable, `Initial_days`, and a group of various, potentially related predictor variables as the initial model. Subsequently, three variable selection methods were employed, namely backward elimination, forward selection, and bidirectional stepwise, to iteratively reduce the initial model. The regression equation for the reduced model is:
+
+Multiple logistic regression analyses were performed to interrogate the relationship between the binary response variable, `ReAdmis`, and a group of various, potentially related predictor variables as the initial model. Subsequently, two variable selection methods were employed, namely forward selection and backward elimination, to iteratively reduce the initial model. The regression equation for the reduced model is:
 $$
 \begin{align}
-\hat{\text{Initial_days}}_i = \hat{\beta}_0
-    &+ \hat{\beta}_1 \text{Age}_i \\
-    &+ \hat{\beta}_2 \text{ReAdmisYes}_i \\
-    &+ \hat{\beta}_3 \text{Initial_adminObservation Admission}_i \\
-    &+ \hat{\beta}_4 \text{Initial_adminElective Admission}_i \\
-    &+ \hat{\beta}_5 \text{Complication_riskLow}_i \\
-    &+ \hat{\beta}_6 \text{Complication_riskHigh}_i \\
-    &+ \hat{\beta}_7 \text{ArthritisYes}_i \\
-    &+ \hat{\beta}_8 \text{AnxietyYes}_i \\
-    &+ \hat{\beta}_9 \text{Additional_charges}_i + \hat{\epsilon_i}
+ln \left( \frac{ \hat{ p(ReAdmis) } } {\left( 1 - \hat{ p(ReAdmis) } \right) } \right) = \hat{\beta}_0 \\
+    &+ \hat{\beta}_1 \text{Initial_days} \\
+    &+ \hat{\beta}_2 \text{Initial_adminEmergency Admission} \\
+    &+ \hat{\beta}_3 \text{Initial_adminObservation Admission} \\
+    &+ \hat{\beta}_4 \text{ServicesCT Scan} \\
+    &+ \hat{\beta}_5 \text{ServicesIntravenous} \\
+    &+ \hat{\beta}_6 \text{ServicesMRI} \\
+    &+ \hat{\beta}_7 \text{StrokeYes} \\
+    &+ \hat{\beta}_8 \text{Complication_riskLow} \\
+    &+ \hat{\beta}_9 \text{Complication_riskMedium} \\
+    &+ \hat{\beta}_{10} \text{ArthritisYes} \\
+    &+ \hat{\beta}_{11} \text{AsthmaYes} \\
+    &+ \hat{\beta}_{12} \text{AnxietyYes} \\
+    &+ \hat{\beta}_{13} \text{HighBloodYes} \\
+    &+ \hat{\beta}_{14} \text{DiabetesYes} \\
+    &+ \hat{\beta}_{15} \text{Children} \\
+    &+ \hat{\beta}_{16} \text{Reflux_esophagitisYes} \\
+    &+ \hat{\beta}_{17} \text{Allergic_rhinitisYes}  + \hat{\epsilon_i}\\
 \end{align}
 $$
-A potential interpretation of this model and its coefficients could be:
+
+As mentioned above, the logistic regression equation is as follows:
+
+$$
+ln \left( \frac{ \hat{ p(x) } } {\left( 1 - \hat{ p(x) } \right) } \right) = \beta_0 + \beta_1x_i + \beta_2x_2 + ... + \beta_nx_n + e_i
+$$
+ 
+Therefore, a potential interpretation of this model and its coefficients could be:
 $$
 \begin{align}
-\text{Est. number of days initially hospitalized} = \\
-    & \text{15.8 days} \\
-    &+ \text{Age of patient}*(0.0176) \\
-    &+ \text{46.5 days (if patient was readmitted, otherwise 0)} \\
-    &+ \text{1.33 days (if patient's initial admission was Observation, otherwise 0)} \\
-    &+ \text{1.59 days (if patient's initial admission was Elective, otherwise 0)} \\
-    &+ \text{1.28 days (if patient's complication risk was Low, otherwise 0)} \\
-    &+ \text{0.332 days (if patient's complication risk was High, otherwise 0)} \\
-    &+ \text{0.675 days (if patient has Arthritis, otherwise 0)} \\
-    &+ \text{0.570 days (if patient has Anxiety, otherwise 0)} \\
-    &- \text{Additional charges}*(0.0000638) \\
+ln \left( \frac{ \hat{ p(ReAdmis) } } {\left( 1 - \hat{ p(ReAdmis) } \right) } \right) = \\    
+
+    & \text{-80.77379} \\   
+    &+ \text{Initial length of hospitalization}*(1.47447) \\
+    &+ \text{2.52225 (if patient's initial admission was emergency, otherwise 0)} \\
+    &+ \text{0.77122 (if patient's initial admission was an observation, otherwise 0)} \\
+    &+ \text{1.58311 (if patient received CT scan services, otherwise 0)} \\
+    &+ \text{0.01598 (if patient's received intravenous services, otherwise 0)} \\
+    &+ \text{2.74402 (if patient's received MRI services, otherwise 0)} \\
+    &+ \text{1.62981 (if patient has had a stroke, otherwise 0)} \\
+    &- \text{1.85203 (if patient's complication risk was low, otherwise 0)} \\
+    &- \text{0.33849 (if patient's complication risk was medium, otherwise 0)} \\
+    &- \text{1.34063 (if patient has arthritis, otherwise 0)} \\
+    &- \text{1.34759 (if patient has asthma, otherwise 0)} \\
+    &- \text{1.02489 (if patient has anxiety, otherwise 0)} \\
+    &+ \text{0.86692 (if patient has high blood pressure, otherwise 0)} \\
+    &+ \text{0.46011 (if patient has diabetes, otherwise 0)} \\
+    &+ \text{Number of children}*(0.09512) \\
+    &- \text{0.40251 (if patient has reflux esophagitis, otherwise 0)} \\
+    &- \text{0.33276 (if patient has allergic rhinitis, otherwise 0)} \\
 \end{align}
+$$
+
+
+However, in order to derive real meaning from the model, it's useful to convert the coefficients of the model from log-odds to probability. That conversion looks like the following:
+$$
+\hat{p(x)} = {\frac{exp(\beta_0 + \beta_1x_i + \beta_2x_2 + ... + \beta_nx_n + e_i)}{1 + exp (\beta_0 + \beta_1x_i + \beta_2x_2 + ... + \beta_nx_n + e_i)}}
 $$
 <!-- •  the statistical and practical significance of the model -->
-Statistically, this model accounts for a reasonable amount of explained variance. Considering the data at our disposal, it's perhaps the best approximation of estimating initial length of hospitalization using multiple regression available. Additionally, the computed F-statistic p-value for the model indicates a high level of significance. On the other hand, the practical significance of this model is of questionable value. One would need to know a given patient's readmission status and amount billed for additional charges in order to have the necessary inputs to the model. 
+Statistically, this model is quite reliable in predicting patient readmission based on the given parameters. The confusion matrix above details a highly accurate classification in terms of true positive and negative predictions. Practically, however, the model relies heavily on `Initial_days` as a predictor. This seems to indicate the longer a patient has been initially hospitalized, the higher the likelihood of their eventual readmission. This cannot be a surprise to those familiar with healthcare outcomes. Therefore, the value of the model is somewhat diminished, in my opinion, due to how heavily it relies on that single feature. Nonetheless, the model on the whole is not overly burdensome and it is quite accurate, at least with regard to the dataset at hand.
 
-<!-- •  the limitations of the data analysis -->
-Perhaps most glaringly, two of the variables the model utilizes, `ReAdmis` and `Additional_charges`, are information (or data) that cannot be known prior to hospitalization. Thus, the exercise of attempting to estimate or predict a patient's length of stay prior to, or even to some extent during, admission to the hospital using this model is effectively impossible. Therefore, use of this model for analysis, while statistically significant, is likely only possible retrospectively and not as a prospective tool. 
-
-Additionally, the `ReAdmis` variable is of such critical relevance to the model as to render the rest of the variables in the model essentially moot. With a coefficient of $46.5$ days, it is clearly the primary constituent of the model. There is, however, value in understanding the impact of the other variables in relation to readmission status as well as to each other. 
-
-All of that aside, perhaps a more prescient and salient inquiry would be to investigate the quality of our data; specifically with regard to the composition of the `Initial_days` variable. Given that the distribution of the variable is skewed and resembles a bimodal or "u-shaped" distribution, finding a linear relationship with the other variables (other than `TotalCharge` and `Additional_charges` which seem to evidently be derived from `Initial_days` anyway) makes multiple regression especially challenging and ineffective.  
+Additionally, it should be noted that the `Initial_days` data is less than ideal given that its distribution is not normal. If anything, the distribution seems to take a bimodal shape and seems to have an odd cutoff point with no major outliers on the high end. It's possible the skew as well as the shape of the data caused the model to produce a "perfect separation" warning when fitting any combination of features including `Initial_days` or simply `ReAdmis ~ Initial_days` itself.
 
 
 </br>
 
 ### F2: Recommendations
 <!-- Recommend a course of action based on your results. -->
-As a result of the preceding analysis, it is recommended that leadership consider implementing policy and procedure utilizing this multiple regression model to estimate a patient's potential initial length of hospitalization. This model can be used as a limited, additional tool to estimate, and attempt to mitigate, longer hospitalizations which could potentially lead to better outcomes overall.
+As a result of the preceding analysis, it is recommended that leadership consider implementing policy and procedure utilizing this logistic regression model to estimate a patient's potential probability of readmission. This model can be used as a limited, additional tool to estimate, and attempt to mitigate, readmission risk which would likely lead to better outcomes overall.
 
 Furthermore, it is recommended that additional, prospective analysis and data capture be performed to better understand the distribution, as well as what potential drivers could be behind the distribution, of the `Initial_days` data. Also, other continuous variables of interest in future data capture could include various lab values such as those found in blood gas analysis, complete blood count panel, comprehensive metabolic panel, etc. As these laboratory values are obtained frequently and during hospitalization, and in some cases during prior doctor visits, and are highly indicative of a patient's status, it seems likely that having access to these data would allow for more useful, predictive models.
 
